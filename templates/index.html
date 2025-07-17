@@ -261,6 +261,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s;
+        }
+
+        .response-header:hover {
+            background: #5a6fd8;
         }
 
         .response-header h3 {
@@ -268,6 +275,16 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .collapse-toggle {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+            margin-left: 10px;
+        }
+
+        .collapse-toggle.collapsed {
+            transform: rotate(-90deg);
         }
 
         .status-badge {
@@ -298,6 +315,19 @@
             font-family: 'Courier New', monospace;
             line-height: 1.6;
             background: white;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .response-content.collapsed {
+            max-height: 0;
+            padding: 0 20px;
+            opacity: 0;
+        }
+
+        .response-content.expanded {
+            max-height: none;
+            opacity: 1;
         }
 
         .response-content.streaming {
@@ -426,16 +456,22 @@
                     <div id="usageSection" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
                         <strong>Real-time Usage:</strong>
                         <div id="usageDetails" style="margin-top: 10px;">
-                            <div id="cpuUsage">CPU: Loading...</div>
-                            <div id="memoryUsage">Memory: Loading...</div>
-                            <div id="gpuUsage" style="display: none;">GPU: Loading...</div>
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 8px;">
+                                <div id="cpuUsage" style="flex: 1; min-width: 200px;">CPU: Loading...</div>
+                                <div id="gpuUsage" style="flex: 1; min-width: 200px; display: none;">GPU: Loading...</div>
+                            </div>
+                            <div id="memoryUsage" style="margin-bottom: 8px;">Memory: Loading...</div>
                             <div id="diskUsage">Disk: Loading...</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="responses" id="responses"></div>
+            <div class="responses" id="responses">
+                <div id="responseControls" style="display: none; margin-bottom: 15px; text-align: right;">
+                    <button id="toggleAllBtn" onclick="toggleAllResponses()" style="padding: 8px 15px; border: none; border-radius: 5px; background: #6c757d; color: white; cursor: pointer; font-size: 14px;">📁 Collapse All</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -465,6 +501,12 @@
         socket.on('model_started', (data) => {
             if (data.session_id === sessionId) {
                 createOrUpdateResponseCard(data.model, 'processing', '');
+                
+                // Show response controls when first model starts
+                const responseControls = document.getElementById('responseControls');
+                if (responseControls) {
+                    responseControls.style.display = 'block';
+                }
             }
         });
 
@@ -492,7 +534,7 @@
 
         socket.on('query_started', (data) => {
             if (data.session_id === sessionId) {
-                responsesDiv.innerHTML = '';
+                responsesDiv.innerHTML = '<div id="responseControls" style="display: none; margin-bottom: 15px; text-align: right;"><button id="toggleAllBtn" onclick="toggleAllResponses()" style="padding: 8px 15px; border: none; border-radius: 5px; background: #6c757d; color: white; cursor: pointer; font-size: 14px;">📁 Collapse All</button></div>';
                 showLoading(`Querying ${data.models.length} models...`);
             }
         });
@@ -586,19 +628,25 @@
                 const header = document.createElement('div');
                 header.className = 'response-header';
                 header.innerHTML = `
-                    <h3>🤖 ${modelName}</h3>
+                    <h3>
+                        🤖 ${modelName}
+                        <span class="collapse-toggle" id="toggle-${modelName}">🔽</span>
+                    </h3>
                     <span class="status-badge ${status}" id="status-${modelName}">
                         ${status === 'processing' ? 'Processing...' : status}
                     </span>
                 `;
                 
                 const contentDiv = document.createElement('div');
-                contentDiv.className = 'response-content';
+                contentDiv.className = 'response-content expanded';
                 contentDiv.id = `content-${modelName}`;
                 
                 card.appendChild(header);
                 card.appendChild(contentDiv);
                 responsesDiv.appendChild(card);
+                
+                // Add click handler for collapse/expand
+                header.addEventListener('click', () => toggleResponse(modelName));
             }
 
             const contentDiv = document.getElementById(`content-${modelName}`);
@@ -682,6 +730,55 @@
             responsesDiv.appendChild(errorDiv);
         }
 
+        function toggleResponse(modelName) {
+            const contentDiv = document.getElementById(`content-${modelName}`);
+            const toggle = document.getElementById(`toggle-${modelName}`);
+            
+            if (contentDiv.classList.contains('collapsed')) {
+                contentDiv.classList.remove('collapsed');
+                contentDiv.classList.add('expanded');
+                toggle.textContent = '🔽';
+                toggle.classList.remove('collapsed');
+            } else {
+                contentDiv.classList.remove('expanded');
+                contentDiv.classList.add('collapsed');
+                toggle.textContent = '▶️';
+                toggle.classList.add('collapsed');
+            }
+        }
+
+        function toggleAllResponses() {
+            const allContent = document.querySelectorAll('.response-content');
+            const allToggles = document.querySelectorAll('.collapse-toggle');
+            const toggleAllBtn = document.getElementById('toggleAllBtn');
+            
+            if (allContent.length === 0) return;
+            
+            // Check if any are expanded
+            const anyExpanded = Array.from(allContent).some(content => 
+                content.classList.contains('expanded')
+            );
+            
+            allContent.forEach((content, index) => {
+                const toggle = allToggles[index];
+                if (anyExpanded) {
+                    // Collapse all
+                    content.classList.remove('expanded');
+                    content.classList.add('collapsed');
+                    toggle.textContent = '▶️';
+                    toggle.classList.add('collapsed');
+                } else {
+                    // Expand all
+                    content.classList.remove('collapsed');
+                    content.classList.add('expanded');
+                    toggle.textContent = '🔽';
+                    toggle.classList.remove('collapsed');
+                }
+            });
+            
+            toggleAllBtn.textContent = anyExpanded ? '📂 Expand All' : '📁 Collapse All';
+        }
+
         function loadSystemInfo() {
             fetch('/api/system-info')
                 .then(response => response.json())
@@ -745,23 +842,26 @@
                         const gpuElement = document.getElementById('gpuUsage');
                         if (usage.gpu && usage.gpu.length > 0) {
                             gpuElement.style.display = 'block';
-                            let gpuHtml = '<strong>🎮 GPU:</strong><br>';
-                            usage.gpu.forEach((gpu, index) => {
-                                const gpuMemPercent = gpu.memory_total_mb > 0 ? 
-                                    Math.round((gpu.memory_used_mb / gpu.memory_total_mb) * 100) : 0;
-                                const utilColor = gpu.utilization_percent > 80 ? '#dc3545' : 
-                                                gpu.utilization_percent > 60 ? '#ffc107' : '#28a745';
-                                
-                                gpuHtml += `
-                                    <div style="margin-left: 10px; margin-top: 5px; font-size: 12px;">
-                                        ${gpu.name}: ${gpu.utilization_percent}% util, 
-                                        ${Math.round(gpu.memory_used_mb)}MB / ${Math.round(gpu.memory_total_mb)}MB 
-                                        <span style="color: ${utilColor};">(${gpuMemPercent}%)</span>
-                                        ${gpu.temperature_c > 0 ? `, ${gpu.temperature_c}°C` : ''}
-                                    </div>
+                            
+                            // Show compact GPU info beside CPU
+                            if (usage.gpu.length === 1) {
+                                const gpu = usage.gpu[0];
+                                gpuElement.innerHTML = `
+                                    <strong>🎮 GPU:</strong> ${gpu.utilization_percent}% 
+                                    <span style="font-size: 11px; color: #666;">
+                                        (${gpu.name.replace('NVIDIA GeForce ', '')}, ${Math.round(gpu.memory_used_mb)}MB/${Math.round(gpu.memory_total_mb)}MB)
+                                    </span>
                                 `;
-                            });
-                            gpuElement.innerHTML = gpuHtml;
+                            } else {
+                                // Multiple GPUs - show summary
+                                const avgUtil = Math.round(usage.gpu.reduce((sum, gpu) => sum + gpu.utilization_percent, 0) / usage.gpu.length);
+                                gpuElement.innerHTML = `
+                                    <strong>🎮 GPU:</strong> ${avgUtil}% avg 
+                                    <span style="font-size: 11px; color: #666;">
+                                        (${usage.gpu.length} GPUs)
+                                    </span>
+                                `;
+                            }
                         } else {
                             gpuElement.style.display = 'none';
                         }
