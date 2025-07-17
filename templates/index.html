@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Model Query Application</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .question-type {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .question-type label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+
+        .question-type label:hover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .question-type input[type="radio"]:checked + span {
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            padding: 5px 15px;
+        }
+
+        .question-type input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .streaming-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #ccc;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::before {
+            transform: translateX(30px);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .models-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .models-info.show {
+            display: block;
+        }
+
+        .responses {
+            margin-top: 30px;
+        }
+
+        .response-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .response-card.streaming {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .response-header {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .response-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.processing {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-badge.completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-badge.error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .response-content {
+            padding: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            background: white;
+        }
+
+        .response-content.streaming {
+            border-left: 4px solid #667eea;
+            background: #f0f3ff;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .summary {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .summary.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .question-type {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Multi-Model Query</h1>
+            <p>Query multiple AI models simultaneously through Ollama</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <div class="form-group">
+                    <label for="question">Your Question:</label>
+                    <textarea id="question" placeholder="Enter your question here..." rows="4"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Question Type:</label>
+                    <div class="question-type">
+                        <label>
+                            <input type="radio" name="type" value="general" checked>
+                            <span>📝 General</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="type" value="coding">
+                            <span>💻 Coding</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="streaming-toggle">
+                        <label for="streaming">Enable Streaming:</label>
+                        <div class="toggle-switch active" id="streamingToggle">
+                            <input type="checkbox" id="streaming" checked style="display: none;">
+                        </div>
+                        <span id="streamingLabel">Real-time responses</span>
+                    </div>
+                </div>
+
+                <button class="submit-btn" id="submitBtn">🚀 Query Models</button>
+
+                <div class="models-info" id="modelsInfo">
+                    <strong>Available Models:</strong> <span id="modelsList">Loading...</span>
+                </div>
+            </div>
+
+            <div class="responses" id="responses"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO
+        const socket = io();
+        let sessionId = null;
+        let isQuerying = false;
+
+        // DOM elements
+        const questionInput = document.getElementById('question');
+        const submitBtn = document.getElementById('submitBtn');
+        const responsesDiv = document.getElementById('responses');
+        const modelsInfo = document.getElementById('modelsInfo');
+        const modelsList = document.getElementById('modelsList');
+        const streamingToggle = document.getElementById('streamingToggle');
+        const streamingCheckbox = document.getElementById('streaming');
+        const streamingLabel = document.getElementById('streamingLabel');
+
+        // Socket event handlers
+        socket.on('connected', (data) => {
+            sessionId = data.session_id;
+            console.log('Connected with session ID:', sessionId);
+            loadModels();
+        });
+
+        socket.on('model_started', (data) => {
+            if (data.session_id === sessionId) {
+                createOrUpdateResponseCard(data.model, 'processing', '');
+            }
+        });
+
+        socket.on('chunk_received', (data) => {
+            if (data.session_id === sessionId) {
+                appendToResponse(data.model, data.chunk);
+            }
+        });
+
+        socket.on('model_completed', (data) => {
+            if (data.session_id === sessionId) {
+                updateResponseStatus(data.model, 'completed', data.elapsed_time);
+            }
+        });
+
+        socket.on('response_received', (data) => {
+            if (data.session_id === sessionId) {
+                if (data.error) {
+                    createOrUpdateResponseCard(data.model, 'error', `Error: ${data.error}`);
+                } else {
+                    createOrUpdateResponseCard(data.model, 'completed', data.response, data.response_time);
+                }
+            }
+        });
+
+        socket.on('query_started', (data) => {
+            if (data.session_id === sessionId) {
+                responsesDiv.innerHTML = '';
+                showLoading(`Querying ${data.models.length} models...`);
+            }
+        });
+
+        socket.on('query_completed', (data) => {
+            if (data.session_id === sessionId) {
+                hideLoading();
+                showSummary(data.successful_count, data.failed_count, data.failed_models);
+                isQuerying = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Query Models';
+            }
+        });
+
+        socket.on('error', (data) => {
+            if (!data.session_id || data.session_id === sessionId) {
+                hideLoading();
+                showError(data.message);
+                isQuerying = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Query Models';
+            }
+        });
+
+        // Event listeners
+        submitBtn.addEventListener('click', handleSubmit);
+
+        streamingToggle.addEventListener('click', () => {
+            const isChecked = streamingCheckbox.checked;
+            streamingCheckbox.checked = !isChecked;
+            streamingToggle.classList.toggle('active', !isChecked);
+            streamingLabel.textContent = !isChecked ? 'Real-time responses' : 'Wait for all responses';
+        });
+
+        questionInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                handleSubmit();
+            }
+        });
+
+        // Functions
+        function loadModels() {
+            fetch('/api/models')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        modelsList.textContent = `${data.total_count} total (${data.coding_count} coding-capable)`;
+                        modelsInfo.classList.add('show');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading models:', error);
+                });
+        }
+
+        function handleSubmit() {
+            if (isQuerying) return;
+
+            const question = questionInput.value.trim();
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+
+            const questionType = document.querySelector('input[name="type"]:checked').value;
+            const useStreaming = streamingCheckbox.checked;
+
+            isQuerying = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Processing...';
+
+            socket.emit('query_models', {
+                question: question,
+                type: questionType,
+                streaming: useStreaming
+            });
+        }
+
+        function createOrUpdateResponseCard(modelName, status, content, responseTime = null) {
+            let card = document.getElementById(`response-${modelName}`);
+            
+            if (!card) {
+                card = document.createElement('div');
+                card.className = 'response-card';
+                card.id = `response-${modelName}`;
+                
+                const header = document.createElement('div');
+                header.className = 'response-header';
+                header.innerHTML = `
+                    <h3>🤖 ${modelName}</h3>
+                    <span class="status-badge ${status}" id="status-${modelName}">
+                        ${status === 'processing' ? 'Processing...' : status}
+                    </span>
+                `;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'response-content';
+                contentDiv.id = `content-${modelName}`;
+                
+                card.appendChild(header);
+                card.appendChild(contentDiv);
+                responsesDiv.appendChild(card);
+            }
+
+            const contentDiv = document.getElementById(`content-${modelName}`);
+            const statusBadge = document.getElementById(`status-${modelName}`);
+
+            if (status === 'processing') {
+                card.classList.add('streaming');
+                contentDiv.classList.add('streaming');
+                contentDiv.textContent = content;
+            } else if (status === 'completed') {
+                card.classList.remove('streaming');
+                contentDiv.classList.remove('streaming');
+                if (content) contentDiv.textContent = content;
+                statusBadge.className = 'status-badge completed';
+                statusBadge.textContent = responseTime ? `Completed (${responseTime.toFixed(2)}s)` : 'Completed';
+            } else if (status === 'error') {
+                card.classList.remove('streaming');
+                contentDiv.classList.remove('streaming');
+                contentDiv.textContent = content;
+                statusBadge.className = 'status-badge error';
+                statusBadge.textContent = 'Error';
+            }
+        }
+
+        function appendToResponse(modelName, chunk) {
+            const contentDiv = document.getElementById(`content-${modelName}`);
+            if (contentDiv) {
+                contentDiv.textContent += chunk;
+                contentDiv.scrollTop = contentDiv.scrollHeight;
+            }
+        }
+
+        function updateResponseStatus(modelName, status, responseTime) {
+            const statusBadge = document.getElementById(`status-${modelName}`);
+            const card = document.getElementById(`response-${modelName}`);
+            
+            if (statusBadge && card) {
+                card.classList.remove('streaming');
+                const contentDiv = document.getElementById(`content-${modelName}`);
+                if (contentDiv) contentDiv.classList.remove('streaming');
+                
+                statusBadge.className = `status-badge ${status}`;
+                statusBadge.textContent = `Completed (${responseTime.toFixed(2)}s)`;
+            }
+        }
+
+        function showLoading(message) {
+            responsesDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    ${message}
+                </div>
+            `;
+        }
+
+        function hideLoading() {
+            const loading = document.querySelector('.loading');
+            if (loading) loading.remove();
+        }
+
+        function showSummary(successful, failed, failedModels) {
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = failed > 0 ? 'summary error' : 'summary';
+            
+            let summaryText = `✅ ${successful} successful`;
+            if (failed > 0) {
+                summaryText += ` • ❌ ${failed} failed`;
+                if (failedModels.length > 0) {
+                    summaryText += '\nFailed models: ' + failedModels.map(f => `${f.model} (${f.error})`).join(', ');
+                }
+            }
+            
+            summaryDiv.textContent = summaryText;
+            responsesDiv.appendChild(summaryDiv);
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = `❌ ${message}`;
+            responsesDiv.appendChild(errorDiv);
+        }
+    </script>
+</body>
+</html>
