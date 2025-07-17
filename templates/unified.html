@@ -613,6 +613,146 @@
             border-bottom: none;
         }
 
+        /* Debate Tabs Styles */
+        .debate-tabs {
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .debate-tab-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .debate-tab-button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .debate-tab-button:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .debate-tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .debate-tab-button.completed {
+            color: #28a745;
+        }
+
+        .debate-tab-button.in-progress {
+            color: #fd7e14;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .debate-tab-content {
+            min-height: 500px;
+        }
+
+        .debate-tab-panel {
+            display: none;
+            padding: 25px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .debate-tab-panel.active {
+            display: block;
+        }
+
+        .debate-tab-panel h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #495057;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Round content styling within tabs */
+        .tab-round-content {
+            display: grid;
+            gap: 20px;
+        }
+
+        .tab-model-response {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .tab-model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .tab-model-name {
+            font-weight: bold;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .tab-model-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .tab-model-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .tab-model-status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .tab-model-content {
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        .tab-model-content.streaming {
+            position: relative;
+        }
+
+        .tab-model-content.streaming::after {
+            content: '▋';
+            animation: blink 1s infinite;
+            color: #667eea;
+        }
+
         /* Utility Styles */
         .loading {
             text-align: center;
@@ -832,16 +972,61 @@
                         </div>
                     </div>
 
-                    <div id="debateRounds"></div>
-
-                    <div class="summary-section" id="summarySection" style="display: none;">
-                        <div class="summary-header">
-                            📊 Enhanced Final Analysis & Verdict
+                    <!-- Debate Tabs Navigation -->
+                    <div class="debate-tabs" id="debateTabs" style="display: none;">
+                        <div class="debate-tab-nav">
+                            <button class="debate-tab-button active" onclick="switchDebateTab('round1')" id="tab-round1">
+                                Round 1
+                            </button>
+                            <button class="debate-tab-button" onclick="switchDebateTab('round2')" id="tab-round2">
+                                Round 2
+                            </button>
+                            <button class="debate-tab-button" onclick="switchDebateTab('round3')" id="tab-round3">
+                                Round 3
+                            </button>
+                            <button class="debate-tab-button" onclick="switchDebateTab('summary')" id="tab-summary">
+                                📝 Summary
+                            </button>
+                            <button class="debate-tab-button" onclick="switchDebateTab('consensus')" id="tab-consensus">
+                                📊 Analysis
+                            </button>
                         </div>
-                        <div class="summary-content" id="summaryContent">
-                            Generating comprehensive summary...
+
+                        <!-- Tab Contents -->
+                        <div class="debate-tab-content">
+                            <div id="debate-tab-round1" class="debate-tab-panel active">
+                                <h3>Round 1: Initial Positions</h3>
+                                <div id="round1Content"></div>
+                            </div>
+
+                            <div id="debate-tab-round2" class="debate-tab-panel">
+                                <h3>Round 2: Responses & Counter-Arguments</h3>
+                                <div id="round2Content"></div>
+                            </div>
+
+                            <div id="debate-tab-round3" class="debate-tab-panel">
+                                <h3>Round 3: Final Arguments</h3>
+                                <div id="round3Content"></div>
+                            </div>
+
+                            <div id="debate-tab-summary" class="debate-tab-panel">
+                                <h3>📝 Final Summary</h3>
+                                <div id="summaryContent">
+                                    Generating comprehensive summary...
+                                </div>
+                            </div>
+
+                            <div id="debate-tab-consensus" class="debate-tab-panel">
+                                <h3>📊 Consensus & Participation Analysis</h3>
+                                <div id="consensusContent">
+                                    Analysis will be available after debate completion...
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Legacy debate rounds container (hidden, for compatibility) -->
+                    <div id="debateRounds" style="display: none;"></div>
                 </div>
             </div>
         </div>
@@ -904,6 +1089,31 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Query Models';
             }
+        }
+
+        // Debate Tab Management
+        function switchDebateTab(tabName) {
+            // Update debate tab buttons
+            document.querySelectorAll('.debate-tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Update debate tab content
+            document.querySelectorAll('.debate-tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(`debate-tab-${tabName}`).classList.add('active');
+        }
+
+        // Helper function to mark tab as completed
+        function markDebateTabCompleted(tabName) {
+            const tabButton = document.getElementById(`tab-${tabName}`);
+            tabButton.classList.add('completed');
+            tabButton.classList.remove('in-progress');
+        }
+
+        // Helper function to mark tab as in progress
+        function markDebateTabInProgress(tabName) {
+            const tabButton = document.getElementById(`tab-${tabName}`);
+            tabButton.classList.add('in-progress');
+            tabButton.classList.remove('completed');
         }
 
         // Socket event handlers
@@ -981,9 +1191,26 @@
                     participantsList.appendChild(tag);
                 });
                 
-                // Clear previous debate rounds
+                // Show debate tabs and reset state
+                document.getElementById('debateTabs').style.display = 'block';
+                
+                // Reset all tabs to initial state
+                document.querySelectorAll('.debate-tab-button').forEach(btn => {
+                    btn.classList.remove('completed', 'in-progress');
+                });
+                
+                // Clear all tab contents
+                document.getElementById('round1Content').innerHTML = '';
+                document.getElementById('round2Content').innerHTML = '';
+                document.getElementById('round3Content').innerHTML = '';
+                document.getElementById('summaryContent').innerHTML = 'Generating comprehensive summary...';
+                document.getElementById('consensusContent').innerHTML = 'Analysis will be available after debate completion...';
+                
+                // Start with Round 1 tab active
+                switchDebateTab('round1');
+                
+                // Clear legacy container
                 debateRounds.innerHTML = '';
-                summarySection.style.display = 'none';
                 
                 startDebateBtn.disabled = true;
                 startDebateBtn.textContent = '🔄 Enhanced Debate in Progress...';
@@ -997,35 +1224,29 @@
                 const progress = (data.round - 1) / data.total_rounds * 100;
                 progressFill.style.width = `${progress}%`;
                 
-                // Create round container
-                const roundDiv = document.createElement('div');
-                roundDiv.className = 'debate-round';
-                roundDiv.id = `round-${data.round}`;
+                // Mark current round as in progress
+                markDebateTabInProgress(`round${data.round}`);
                 
-                const roundHeader = document.createElement('div');
-                roundHeader.className = 'round-header';
-                roundHeader.textContent = `Round ${data.round} - Interactive Responses`;
-                
-                roundDiv.appendChild(roundHeader);
-                debateRounds.appendChild(roundDiv);
+                // Switch to current round tab
+                switchDebateTab(`round${data.round}`);
             }
         });
 
         socket.on('debate_model_started', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
-                createOrUpdateDebateResponse(data.model, 'processing', '');
+                createOrUpdateTabDebateResponse(data.model, 'processing', '');
             }
         });
 
         socket.on('debate_chunk_received', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
-                appendToDebateResponse(data.model, data.chunk);
+                appendToTabDebateResponse(data.model, data.chunk);
             }
         });
 
         socket.on('debate_model_completed', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
-                updateDebateResponseStatus(data.model, 'completed', data.elapsed_time);
+                updateTabDebateResponseStatus(data.model, 'completed', data.elapsed_time);
             }
         });
 
@@ -1034,18 +1255,23 @@
                 const progress = data.round / currentDebate.rounds * 100;
                 progressFill.style.width = `${progress}%`;
                 
+                // Mark current round as completed
+                markDebateTabCompleted(`round${data.round}`);
+                
                 if (data.round < currentDebate.rounds) {
                     roundIndicator.textContent = `Round ${data.round} completed. Models reviewing responses for Round ${data.round + 1}...`;
                 } else {
                     roundIndicator.textContent = `All rounds completed. Generating enhanced final analysis...`;
+                    // Switch to summary tab
+                    markDebateTabInProgress('summary');
+                    switchDebateTab('summary');
                 }
             }
         });
 
         socket.on('debate_summary_started', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
-                summarySection.style.display = 'block';
-                summaryContent.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing enhanced debate and generating comprehensive verdict...</div>';
+                document.getElementById('summaryContent').innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing enhanced debate and generating comprehensive verdict...</div>';
             }
         });
 
@@ -1056,77 +1282,84 @@
                 roundIndicator.textContent = `Enhanced Debate Completed! ${data.total_rounds} rounds with interactive model responses`;
                 progressFill.style.width = '100%';
                 
-                // Show enhanced final summary with consensus analysis
+                // Mark summary as completed and switch to analysis tab
+                markDebateTabCompleted('summary');
+                markDebateTabCompleted('consensus');
+                
+                // Update summary content
                 if (data.summary.success) {
+                    document.getElementById('summaryContent').innerHTML = `
+                        <div class="summary-content">${data.summary.content}</div>
+                    `;
+                } else {
+                    document.getElementById('summaryContent').innerHTML = '<div class="error-message">Error generating enhanced final analysis</div>';
+                }
+                
+                // Update consensus analysis content
+                if (data.consensus_analysis) {
                     const analysis = data.consensus_analysis;
-                    const summaryHtml = `
-                        <div class="debate-final-analysis">
-                            <div class="summary-section">
-                                <h3>📝 Final Summary</h3>
-                                <div class="summary-content">${data.summary.content}</div>
+                    const consensusHtml = `
+                        <div class="consensus-metrics">
+                            <div class="consensus-score">
+                                <div class="metric-card">
+                                    <div class="metric-value" style="color: ${analysis.consensus_score >= 75 ? '#4CAF50' : analysis.consensus_score >= 50 ? '#FF9800' : '#f44336'}">${analysis.consensus_score}%</div>
+                                    <div class="metric-label">Consensus Score</div>
+                                    <div class="metric-sublabel">${analysis.consensus_level}</div>
+                                </div>
                             </div>
                             
-                            <div class="consensus-metrics">
-                                <h3>📊 Consensus & Participation Analysis</h3>
-                                
-                                <div class="consensus-score">
-                                    <div class="metric-card">
-                                        <div class="metric-value" style="color: ${analysis.consensus_score >= 75 ? '#4CAF50' : analysis.consensus_score >= 50 ? '#FF9800' : '#f44336'}">${analysis.consensus_score}%</div>
-                                        <div class="metric-label">Consensus Score</div>
-                                        <div class="metric-sublabel">${analysis.consensus_level}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="participation-stats">
-                                    <h4>🎯 Individual Participation</h4>
-                                    <div class="participation-grid">
-                                        ${Object.entries(analysis.participation_stats).map(([model, stats]) => `
-                                            <div class="participation-card">
-                                                <div class="model-name">${model}</div>
-                                                <div class="participation-percentage">${stats.participation_percentage}%</div>
-                                                <div class="participation-details">
-                                                    ${stats.total_words} words · ${stats.rounds_participated} rounds
-                                                    <br>Avg: ${stats.avg_words_per_round} words/round
-                                                </div>
+                            <div class="participation-stats">
+                                <h4>🎯 Individual Participation</h4>
+                                <div class="participation-grid">
+                                    ${Object.entries(analysis.participation_stats).map(([model, stats]) => `
+                                        <div class="participation-card">
+                                            <div class="model-name">${model}</div>
+                                            <div class="participation-percentage">${stats.participation_percentage}%</div>
+                                            <div class="participation-details">
+                                                ${stats.total_words} words · ${stats.rounds_participated} rounds
+                                                <br>Avg: ${stats.avg_words_per_round} words/round
                                             </div>
-                                        `).join('')}
-                                    </div>
+                                        </div>
+                                    `).join('')}
                                 </div>
-                                
-                                <div class="interaction-analysis">
-                                    <h4>🤝 Interaction Patterns</h4>
-                                    <div class="interaction-stats">
-                                        <span class="stat-item">
-                                            <span class="stat-icon">✅</span> ${analysis.interaction_counts.agreement_instances} agreements
-                                        </span>
-                                        <span class="stat-item">
-                                            <span class="stat-icon">❌</span> ${analysis.interaction_counts.disagreement_instances} disagreements
-                                        </span>
-                                        <span class="stat-item">
-                                            <span class="stat-icon">🏗️</span> ${analysis.interaction_counts.building_instances} building responses
-                                        </span>
-                                    </div>
+                            </div>
+                            
+                            <div class="interaction-analysis">
+                                <h4>🤝 Interaction Patterns</h4>
+                                <div class="interaction-stats">
+                                    <span class="stat-item">
+                                        <span class="stat-icon">✅</span> ${analysis.interaction_counts.agreement_instances} agreements
+                                    </span>
+                                    <span class="stat-item">
+                                        <span class="stat-icon">❌</span> ${analysis.interaction_counts.disagreement_instances} disagreements
+                                    </span>
+                                    <span class="stat-item">
+                                        <span class="stat-icon">🏗️</span> ${analysis.interaction_counts.building_instances} building responses
+                                    </span>
                                 </div>
-                                
-                                <div class="round-breakdown">
-                                    <h4>📈 Round-by-Round Analysis</h4>
-                                    <div class="round-stats">
-                                        ${analysis.round_analysis.map(round => `
-                                            <div class="round-stat">
-                                                <strong>Round ${round.round}:</strong> 
-                                                ${round.participants} participants, 
-                                                ${round.total_words} total words 
-                                                (avg: ${round.avg_words_per_participant} per participant)
-                                            </div>
-                                        `).join('')}
-                                    </div>
+                            </div>
+                            
+                            <div class="round-breakdown">
+                                <h4>📈 Round-by-Round Analysis</h4>
+                                <div class="round-stats">
+                                    ${analysis.round_analysis.map(round => `
+                                        <div class="round-stat">
+                                            <strong>Round ${round.round}:</strong> 
+                                            ${round.participants} participants, 
+                                            ${round.total_words} total words 
+                                            (avg: ${round.avg_words_per_participant} per participant)
+                                        </div>
+                                    `).join('')}
                                 </div>
                             </div>
                         </div>
                     `;
-                    summaryContent.innerHTML = summaryHtml;
+                    document.getElementById('consensusContent').innerHTML = consensusHtml;
+                    
+                    // Switch to consensus analysis tab
+                    switchDebateTab('consensus');
                 } else {
-                    summaryContent.innerHTML = '<div class="error-message">Error generating enhanced final analysis</div>';
+                    document.getElementById('consensusContent').innerHTML = '<div class="error-message">Consensus analysis not available</div>';
                 }
                 
                 startDebateBtn.disabled = false;
@@ -1180,6 +1413,86 @@
         });
 
         // Functions
+        
+        // Tab-based debate response functions
+        function createOrUpdateTabDebateResponse(modelName, status, content = '') {
+            // Determine which round we're in
+            let currentRound = 1;
+            if (roundIndicator.textContent.includes('Round 2')) currentRound = 2;
+            else if (roundIndicator.textContent.includes('Round 3')) currentRound = 3;
+            
+            const roundContent = document.getElementById(`round${currentRound}Content`);
+            const responseId = `tab-response-${modelName}-${currentRound}`;
+            
+            let responseDiv = document.getElementById(responseId);
+            
+            if (!responseDiv) {
+                // Create new response container
+                responseDiv = document.createElement('div');
+                responseDiv.className = 'tab-model-response';
+                responseDiv.id = responseId;
+                
+                const header = document.createElement('div');
+                header.className = 'tab-model-header';
+                header.innerHTML = `
+                    <span class="tab-model-name">🤖 ${modelName}</span>
+                    <span class="tab-model-status ${status}" id="tab-status-${modelName}-${currentRound}">
+                        ${status === 'processing' ? 'Thinking...' : status}
+                    </span>
+                `;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'tab-model-content';
+                contentDiv.id = `tab-content-${modelName}-${currentRound}`;
+                
+                responseDiv.appendChild(header);
+                responseDiv.appendChild(contentDiv);
+                roundContent.appendChild(responseDiv);
+            }
+
+            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentRound}`);
+            const statusBadge = document.getElementById(`tab-status-${modelName}-${currentRound}`);
+
+            if (status === 'processing') {
+                contentDiv.classList.add('streaming');
+                contentDiv.textContent = content;
+            } else if (status === 'completed') {
+                contentDiv.classList.remove('streaming');
+                if (content) contentDiv.textContent = content;
+                statusBadge.className = 'tab-model-status completed';
+                statusBadge.textContent = 'Completed';
+            }
+        }
+
+        function appendToTabDebateResponse(modelName, chunk) {
+            // Determine which round we're in
+            let currentRound = 1;
+            if (roundIndicator.textContent.includes('Round 2')) currentRound = 2;
+            else if (roundIndicator.textContent.includes('Round 3')) currentRound = 3;
+            
+            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentRound}`);
+            if (contentDiv) {
+                contentDiv.textContent += chunk;
+                contentDiv.scrollTop = contentDiv.scrollHeight;
+            }
+        }
+
+        function updateTabDebateResponseStatus(modelName, status, responseTime) {
+            // Determine which round we're in
+            let currentRound = 1;
+            if (roundIndicator.textContent.includes('Round 2')) currentRound = 2;
+            else if (roundIndicator.textContent.includes('Round 3')) currentRound = 3;
+            
+            const statusBadge = document.getElementById(`tab-status-${modelName}-${currentRound}`);
+            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentRound}`);
+            
+            if (statusBadge && contentDiv) {
+                contentDiv.classList.remove('streaming');
+                statusBadge.className = 'tab-model-status completed';
+                statusBadge.textContent = `Completed (${responseTime.toFixed(2)}s)`;
+            }
+        }
+        
         function loadModels() {
             fetch('/api/models')
                 .then(response => response.json())
