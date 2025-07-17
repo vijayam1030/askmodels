@@ -1,0 +1,841 @@
+#!/usr/bin/env python3
+"""
+Unified Multi-Model Application
+Flask-based web interface for both querying multiple models and conducting model debates.
+"""
+
+import asyncio
+import json
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, Response
+from flask_socketio import SocketIO, emit
+import threading
+import queue
+import time
+import random
+
+from models import (
+    OllamaModelManager, 
+    ConfigManager, 
+    QuestionType, 
+    PromptEnhancer,
+    ModelResponse
+)
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'unified-secret-key-here'
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Global instances
+config_manager = ConfigManager()
+model_manager = OllamaModelManager(config_manager)
+available_models = []
+
+# Debate configuration
+DEBATE_ROUNDS = 3
+MAX_DEBATE_MODELS = 4
+
+def filter_large_models(models):
+    """Filter out ultra-large models (70B+ parameters) that may be too resource intensive."""
+    filtered_models = []
+    excluded_models = []
+    
+    for model in models:
+        model_lower = model.lower()
+        
+        # Check for ultra-large model indicators
+        is_ultra_large = any([
+            '70b' in model_lower,
+            '72b' in model_lower,
+            '405b' in model_lower,
+            'llama3.1:70b' in model_lower,
+            'llama3.2:70b' in model_lower,
+            'qwen2.5:72b' in model_lower,
+            'codellama:70b' in model_lower
+        ])
+        
+        if is_ultra_large:
+            excluded_models.append(model)
+            print(f"⚠️  Excluding ultra-large model: {model} (likely 70B+ parameters)")
+        else:
+            filtered_models.append(model)
+    
+    if excluded_models:
+        print(f"📊 Filtered {len(excluded_models)} ultra-large models, {len(filtered_models)} models available")
+    
+    return filtered_models
+
+def initialize_models_on_startup():
+    """Initialize and filter models when the application starts."""
+    print("🔄 Initializing Unified Multi-Model Application...")
+    
+    try:
+        # Get all available models from Ollama
+        all_models = model_manager.get_available_models(force_refresh=True)
+        
+        if not all_models:
+            print("❌ No models found. Please ensure Ollama is running and models are installed.")
+            return []
+        
+        print(f"📋 Found {len(all_models)} total models from Ollama")
+        
+        # Filter out ultra-large models
+        filtered_models = filter_large_models(all_models)
+        
+        # Update global available models
+        global available_models
+        available_models = filtered_models
+        
+        # Display system optimization info
+        if filtered_models:
+            print(f"✅ {len(filtered_models)} models ready for use:")
+            for i, model in enumerate(filtered_models, 1):
+                print(f"   {i}. {model}")
+            
+            # Show system optimization
+            info = model_manager.resource_manager.system_info
+            optimal_concurrent, _ = model_manager.resource_manager.optimize_concurrent_models(filtered_models)
+            
+            print(f"\n🖥️  System: {info.available_ram_gb:.1f}GB RAM, {info.cpu_cores} CPU cores")
+            if info.gpu_info:
+                print(f"🎮 GPU: {len(info.gpu_info)} detected")
+            print(f"⚡ Optimal concurrency: {optimal_concurrent} models")
+            print(f"🗣️  Features: Q&A Mode + Interactive Debate Mode")
+        
+        return filtered_models
+        
+    except Exception as e:
+        print(f"❌ Error initializing models: {e}")
+        return []
+
+class WebStreamingHandler:
+    """Handles streaming responses for web interface."""
+    
+    def __init__(self, session_id):
+        self.session_id = session_id
+        self.responses = {}
+        self.start_times = {}
+    
+    async def streaming_callback(self, model_name: str, chunk: str, is_done: bool):
+        """Callback for streaming model responses."""
+        if chunk and not is_done:
+            # Initialize model tracking if first chunk
+            if model_name not in self.responses:
+                self.responses[model_name] = ""
+                self.start_times[model_name] = time.time()
+                socketio.emit('model_started', {
+                    'model': model_name,
+                    'session_id': self.session_id
+                })
+            
+            # Add chunk to response
+            self.responses[model_name] += chunk
+            
+            # Emit chunk to client
+            socketio.emit('chunk_received', {
+                'model': model_name,
+                'chunk': chunk,
+                'session_id': self.session_id
+            })
+            
+        elif is_done:
+            # Model completed
+            elapsed_time = time.time() - self.start_times.get(model_name, 0)
+            socketio.emit('model_completed', {
+                'model': model_name,
+                'elapsed_time': elapsed_time,
+                'session_id': self.session_id
+            })
+
+class DebateStreamingHandler:
+    """Handles streaming responses for debate interface."""
+    
+    def __init__(self, session_id):
+        self.session_id = session_id
+        self.responses = {}
+        self.start_times = {}
+    
+    async def streaming_callback(self, model_name: str, chunk: str, is_done: bool):
+        """Callback for streaming model responses during debate."""
+        if chunk and not is_done:
+            # Initialize model tracking if first chunk
+            if model_name not in self.responses:
+                self.responses[model_name] = ""
+                self.start_times[model_name] = time.time()
+                socketio.emit('debate_model_started', {
+                    'model': model_name,
+                    'session_id': self.session_id
+                })
+            
+            # Add chunk to response
+            self.responses[model_name] += chunk
+            
+            # Emit chunk to client
+            socketio.emit('debate_chunk_received', {
+                'model': model_name,
+                'chunk': chunk,
+                'session_id': self.session_id
+            })
+            
+        elif is_done:
+            # Model completed
+            elapsed_time = time.time() - self.start_times.get(model_name, 0)
+            socketio.emit('debate_model_completed', {
+                'model': model_name,
+                'elapsed_time': elapsed_time,
+                'session_id': self.session_id
+            })
+
+class EnhancedDebateManager:
+    """Enhanced debate manager with improved inter-model interaction."""
+    
+    def __init__(self, session_id):
+        self.session_id = session_id
+        self.debate_history = []
+        self.current_round = 0
+        self.debate_models = []
+        self.original_topic = ""
+        self.model_positions = {}  # Track each model's stance
+        
+    def select_debate_models(self, available_models, count=None):
+        """Select models for the debate."""
+        if count is None:
+            count = min(MAX_DEBATE_MODELS, len(available_models))
+        
+        # Select diverse models for better debate
+        selected = random.sample(available_models, min(count, len(available_models)))
+        self.debate_models = selected
+        return selected
+    
+    def create_enhanced_debate_prompt(self, topic, round_num, model_name, previous_arguments=None):
+        """Create an enhanced prompt with better inter-model interaction."""
+        if round_num == 1:
+            return f"""You are "{model_name}" participating in a structured debate with other AI models.
+
+TOPIC: {topic}
+
+This is ROUND {round_num} of {DEBATE_ROUNDS}. Present your initial position on this topic.
+
+Your role: Take a thoughtful stance and argue from that perspective throughout the debate.
+
+Requirements:
+- Present a clear, well-reasoned argument
+- Take a specific stance (for, against, or nuanced position)
+- Provide evidence or logical reasoning
+- Be concise but thorough (2-3 paragraphs)
+- Maintain a respectful, academic tone
+- Remember your position for future rounds
+
+Your initial argument:"""
+        
+        elif round_num == 2:
+            # Group arguments by model for better context
+            other_models_args = []
+            for arg in previous_arguments:
+                if arg['model'] != model_name and arg['round'] == round_num - 1:
+                    other_models_args.append(f"**{arg['model']}**:\n{arg['content']}")
+            
+            other_args_text = "\n\n".join(other_models_args) if other_models_args else "No other arguments yet."
+            
+            return f"""You are "{model_name}" in round {round_num} of a debate on: {topic}
+
+ARGUMENTS FROM OTHER MODELS IN ROUND {round_num-1}:
+{other_args_text}
+
+Now respond to their arguments:
+- Address specific points made by other models by name
+- Strengthen your position with new evidence
+- Acknowledge valid points while maintaining your stance
+- Challenge weak arguments respectfully
+- Build on areas of potential agreement
+
+Your response (2-3 paragraphs):"""
+        
+        else:  # Round 3
+            # Show progression of debate
+            round1_args = [arg for arg in previous_arguments if arg['round'] == 1 and arg['model'] != model_name]
+            round2_args = [arg for arg in previous_arguments if arg['round'] == 2 and arg['model'] != model_name]
+            
+            context = f"ROUND 1 POSITIONS:\n"
+            for arg in round1_args:
+                context += f"**{arg['model']}**: {arg['content'][:200]}...\n\n"
+            
+            context += f"ROUND 2 RESPONSES:\n"
+            for arg in round2_args:
+                context += f"**{arg['model']}**: {arg['content'][:200]}...\n\n"
+            
+            return f"""You are "{model_name}" in the FINAL ROUND ({round_num}) of the debate on: {topic}
+
+DEBATE PROGRESSION:
+{context}
+
+This is your final chance to make your case:
+- Summarize your strongest arguments
+- Address any remaining counterpoints
+- Find common ground where possible
+- Present your final position clearly
+- Be persuasive but fair
+
+Your final argument (2-3 paragraphs):"""
+    
+    def analyze_debate_consensus(self, topic, all_arguments):
+        """Analyze consensus levels and participation metrics from the debate."""
+        if not all_arguments:
+            return {
+                'consensus_score': 0,
+                'participation_stats': {},
+                'round_analysis': [],
+                'agreement_areas': [],
+                'disagreement_areas': []
+            }
+        
+        # Calculate participation statistics
+        model_stats = {}
+        total_words = 0
+        round_participation = {i: [] for i in range(1, DEBATE_ROUNDS + 1)}
+        
+        for arg in all_arguments:
+            model = arg['model']
+            content = arg['content']
+            round_num = arg['round']
+            
+            word_count = len(content.split())
+            total_words += word_count
+            
+            if model not in model_stats:
+                model_stats[model] = {
+                    'total_words': 0,
+                    'rounds_participated': 0,
+                    'avg_words_per_round': 0,
+                    'stance_consistency': 'unknown'
+                }
+            
+            model_stats[model]['total_words'] += word_count
+            model_stats[model]['rounds_participated'] += 1
+            round_participation[round_num].append({
+                'model': model,
+                'words': word_count,
+                'content_preview': content[:100] + '...' if len(content) > 100 else content
+            })
+        
+        # Calculate percentages
+        for model in model_stats:
+            stats = model_stats[model]
+            stats['participation_percentage'] = round((stats['total_words'] / total_words) * 100, 1)
+            stats['avg_words_per_round'] = round(stats['total_words'] / stats['rounds_participated'], 1)
+        
+        # Analyze consensus patterns (simplified analysis)
+        consensus_indicators = {
+            'agreement_keywords': ['agree', 'correct', 'valid point', 'as mentioned', 'similarly', 'indeed', 'likewise'],
+            'disagreement_keywords': ['however', 'disagree', 'contrary', 'wrong', 'incorrect', 'unlike', 'oppose'],
+            'building_keywords': ['building on', 'expanding', 'furthermore', 'additionally', 'also'],
+            'questioning_keywords': ['question', 'challenge', 'doubt', 'uncertain', 'unclear']
+        }
+        
+        agreement_count = 0
+        disagreement_count = 0
+        building_count = 0
+        total_interactions = 0
+        
+        for arg in all_arguments:
+            content_lower = arg['content'].lower()
+            total_interactions += 1
+            
+            for keyword in consensus_indicators['agreement_keywords']:
+                if keyword in content_lower:
+                    agreement_count += 1
+                    break
+            
+            for keyword in consensus_indicators['disagreement_keywords']:
+                if keyword in content_lower:
+                    disagreement_count += 1
+                    break
+                    
+            for keyword in consensus_indicators['building_keywords']:
+                if keyword in content_lower:
+                    building_count += 1
+                    break
+        
+        # Calculate consensus score (0-100)
+        if total_interactions > 0:
+            agreement_ratio = agreement_count / total_interactions
+            building_ratio = building_count / total_interactions
+            disagreement_ratio = disagreement_count / total_interactions
+            
+            # Consensus score: higher when more agreement and building, lower when more disagreement
+            consensus_score = round(((agreement_ratio + building_ratio) * 50 - disagreement_ratio * 25) * 2, 1)
+            consensus_score = max(0, min(100, consensus_score))  # Clamp between 0-100
+        else:
+            consensus_score = 0
+        
+        # Determine consensus level
+        if consensus_score >= 75:
+            consensus_level = "High Consensus"
+        elif consensus_score >= 50:
+            consensus_level = "Moderate Consensus"
+        elif consensus_score >= 25:
+            consensus_level = "Low Consensus"
+        else:
+            consensus_level = "High Disagreement"
+        
+        # Round-by-round analysis
+        round_analysis = []
+        for round_num in range(1, DEBATE_ROUNDS + 1):
+            round_participants = round_participation.get(round_num, [])
+            round_total_words = sum(p['words'] for p in round_participants)
+            
+            round_analysis.append({
+                'round': round_num,
+                'participants': len(round_participants),
+                'total_words': round_total_words,
+                'avg_words_per_participant': round(round_total_words / len(round_participants), 1) if round_participants else 0,
+                'participation_details': round_participants
+            })
+        
+        return {
+            'consensus_score': consensus_score,
+            'consensus_level': consensus_level,
+            'participation_stats': model_stats,
+            'round_analysis': round_analysis,
+            'interaction_counts': {
+                'agreement_instances': agreement_count,
+                'disagreement_instances': disagreement_count,
+                'building_instances': building_count,
+                'total_interactions': total_interactions
+            },
+            'debate_metrics': {
+                'total_words': total_words,
+                'total_rounds': DEBATE_ROUNDS,
+                'participants': len(model_stats),
+                'avg_participation': round(100 / len(model_stats), 1) if model_stats else 0
+            }
+        }
+    
+    def create_summary_prompt(self, topic, all_arguments):
+        """Create a prompt for the final summary with enhanced analysis."""
+        # Organize arguments by model and round
+        model_progression = {}
+        for arg in all_arguments:
+            model = arg['model']
+            if model not in model_progression:
+                model_progression[model] = []
+            model_progression[model].append(f"Round {arg['round']}: {arg['content']}")
+        
+        debate_analysis = f"TOPIC: {topic}\n\n"
+        debate_analysis += "COMPLETE DEBATE PROGRESSION:\n\n"
+        
+        for model, rounds in model_progression.items():
+            debate_analysis += f"=== {model} ===\n"
+            for round_content in rounds:
+                debate_analysis += f"{round_content}\n\n"
+        
+        return f"""You are a neutral debate analyst. Provide a comprehensive analysis of this multi-round AI debate:
+
+{debate_analysis}
+
+Provide a detailed analysis with these sections:
+
+1. **PARTICIPANT POSITIONS**: Summarize each model's core stance
+2. **ARGUMENT EVOLUTION**: How positions developed across rounds  
+3. **KEY INTERACTIONS**: Highlight where models directly engaged with each other
+4. **STRONGEST POINTS**: Most compelling arguments from each side
+5. **AREAS OF AGREEMENT**: Common ground found during debate
+6. **UNRESOLVED TENSIONS**: Remaining disagreements
+7. **DEBATE QUALITY**: Assessment of reasoning and evidence quality
+8. **SYNTHESIS**: A balanced perspective that incorporates the best insights
+
+Format with clear headers and maintain analytical objectivity.
+
+COMPREHENSIVE ANALYSIS:"""
+
+@app.route('/')
+def index():
+    """Main unified page."""
+    return render_template('unified.html')
+
+@app.route('/api/models')
+def get_models():
+    """Get available models."""
+    global available_models
+    
+    # Use already filtered models, but refresh if empty
+    if not available_models:
+        available_models = filter_large_models(model_manager.get_available_models(force_refresh=True))
+    
+    coding_models = model_manager.get_models_for_question_type(QuestionType.CODING)
+    # Also filter coding models
+    coding_models = [m for m in coding_models if m in available_models]
+    
+    return jsonify({
+        'success': True,
+        'models': available_models,
+        'coding_models': coding_models,
+        'total_count': len(available_models),
+        'coding_count': len(coding_models),
+        'max_debate_participants': MAX_DEBATE_MODELS,
+        'debate_rounds': DEBATE_ROUNDS,
+        'note': 'Ultra-large models (70B+ parameters) are filtered out for optimal performance'
+    })
+
+@app.route('/api/config')
+def get_config():
+    """Get current configuration."""
+    return jsonify({
+        'success': True,
+        'config': config_manager.config,
+        'debate_config': {
+            'rounds': DEBATE_ROUNDS,
+            'max_participants': MAX_DEBATE_MODELS
+        }
+    })
+
+@app.route('/api/system-info')
+def get_system_info():
+    """Get current system resource information."""
+    try:
+        info = model_manager.resource_manager.system_info
+        optimal_concurrent, _ = model_manager.resource_manager.optimize_concurrent_models(
+            model_manager.get_available_models()
+        )
+        
+        return jsonify({
+            'success': True,
+            'ram': {
+                'available': round(info.available_ram_gb, 1),
+                'total': round(info.total_ram_gb, 1),
+                'usage_percent': round((1 - info.available_ram_gb / info.total_ram_gb) * 100, 1)
+            },
+            'cpu_cores': info.cpu_cores,
+            'gpus': info.gpu_info,
+            'optimal_concurrency': optimal_concurrent
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/system-usage')
+def get_system_usage():
+    """Get real-time system resource usage."""
+    try:
+        usage_data = model_manager.resource_manager.get_real_time_usage()
+        
+        return jsonify({
+            'success': True,
+            'usage': usage_data,
+            'timestamp': usage_data.get('timestamp', time.time())
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ========== Q&A MODE ENDPOINTS ==========
+
+@socketio.on('query_models')
+def handle_query(data):
+    """Handle regular Q&A model query request."""
+    question = data.get('question', '').strip()
+    question_type_str = data.get('type', 'general')
+    use_streaming = data.get('streaming', True)
+    session_id = request.sid
+    
+    if not question:
+        emit('error', {'message': 'Please provide a question'})
+        return
+    
+    # Determine question type
+    question_type = QuestionType.CODING if question_type_str == 'coding' else QuestionType.GENERAL
+    
+    # Start processing in background
+    thread = threading.Thread(
+        target=process_query_async,
+        args=(question, question_type, use_streaming, session_id)
+    )
+    thread.daemon = True
+    thread.start()
+
+def process_query_async(question: str, question_type: QuestionType, use_streaming: bool, session_id: str):
+    """Process query asynchronously."""
+    try:
+        # Run in new event loop for thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        loop.run_until_complete(
+            process_query(question, question_type, use_streaming, session_id)
+        )
+        
+        loop.close()
+        
+    except Exception as e:
+        socketio.emit('error', {
+            'message': f'Error processing query: {str(e)}',
+            'session_id': session_id
+        })
+
+async def process_query(question: str, question_type: QuestionType, use_streaming: bool, session_id: str):
+    """Process the actual query."""
+    try:
+        # Get appropriate models
+        models_to_query = model_manager.get_models_for_question_type(question_type)
+        
+        if not models_to_query:
+            socketio.emit('error', {
+                'message': 'No suitable models found for this question type',
+                'session_id': session_id
+            })
+            return
+        
+        # Enhance prompt
+        enhanced_prompt = PromptEnhancer.enhance_prompt(question, question_type)
+        
+        # Emit query start
+        socketio.emit('query_started', {
+            'question': question,
+            'type': question_type.value,
+            'models': models_to_query,
+            'streaming': use_streaming,
+            'session_id': session_id
+        })
+        
+        if use_streaming:
+            # Setup streaming handler
+            streaming_handler = WebStreamingHandler(session_id)
+            
+            # Query with streaming
+            responses = await model_manager.query_multiple_models(
+                models_to_query,
+                enhanced_prompt,
+                max_concurrent=3,
+                stream=True,
+                callback=streaming_handler.streaming_callback
+            )
+        else:
+            # Query without streaming
+            responses = await model_manager.query_multiple_models(
+                models_to_query,
+                enhanced_prompt,
+                max_concurrent=3,
+                stream=False
+            )
+            
+            # Emit all responses at once
+            for response in responses:
+                socketio.emit('response_received', {
+                    'model': response.model_name,
+                    'response': response.response,
+                    'response_time': response.response_time,
+                    'error': response.error,
+                    'session_id': session_id
+                })
+        
+        # Emit completion summary
+        successful = [r for r in responses if r.is_successful()]
+        failed = [r for r in responses if not r.is_successful()]
+        
+        socketio.emit('query_completed', {
+            'successful_count': len(successful),
+            'failed_count': len(failed),
+            'failed_models': [{'model': r.model_name, 'error': r.error} for r in failed],
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        socketio.emit('error', {
+            'message': f'Error during query processing: {str(e)}',
+            'session_id': session_id
+        })
+
+# ========== DEBATE MODE ENDPOINTS ==========
+
+@socketio.on('start_debate')
+def handle_start_debate(data):
+    """Handle debate start request."""
+    topic = data.get('topic', '').strip()
+    participant_count = data.get('participant_count', 3)
+    session_id = request.sid
+    
+    if not topic:
+        emit('error', {'message': 'Please provide a debate topic'})
+        return
+    
+    if participant_count < 2 or participant_count > MAX_DEBATE_MODELS:
+        emit('error', {'message': f'Participant count must be between 2 and {MAX_DEBATE_MODELS}'})
+        return
+    
+    # Start processing in background
+    thread = threading.Thread(
+        target=process_enhanced_debate_async,
+        args=(topic, participant_count, session_id)
+    )
+    thread.daemon = True
+    thread.start()
+
+def process_enhanced_debate_async(topic: str, participant_count: int, session_id: str):
+    """Process enhanced debate asynchronously."""
+    try:
+        # Run in new event loop for thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        loop.run_until_complete(
+            process_enhanced_debate(topic, participant_count, session_id)
+        )
+        
+        loop.close()
+        
+    except Exception as e:
+        socketio.emit('error', {
+            'message': f'Error processing debate: {str(e)}',
+            'session_id': session_id
+        })
+
+async def process_enhanced_debate(topic: str, participant_count: int, session_id: str):
+    """Process the enhanced debate with better inter-model interaction."""
+    try:
+        global available_models
+        
+        if not available_models:
+            socketio.emit('error', {
+                'message': 'No models available for debate',
+                'session_id': session_id
+            })
+            return
+        
+        # Initialize enhanced debate manager
+        debate_manager = EnhancedDebateManager(session_id)
+        debate_manager.original_topic = topic
+        
+        # Select debate participants
+        selected_models = debate_manager.select_debate_models(available_models, participant_count)
+        
+        # Emit debate start
+        socketio.emit('debate_started', {
+            'topic': topic,
+            'participants': selected_models,
+            'rounds': DEBATE_ROUNDS,
+            'session_id': session_id
+        })
+        
+        # Conduct enhanced debate rounds
+        for round_num in range(1, DEBATE_ROUNDS + 1):
+            debate_manager.current_round = round_num
+            
+            socketio.emit('debate_round_started', {
+                'round': round_num,
+                'total_rounds': DEBATE_ROUNDS,
+                'session_id': session_id
+            })
+            
+            # Process each model individually for better interaction
+            for model in selected_models:
+                # Create personalized prompt for this model
+                prompt = debate_manager.create_enhanced_debate_prompt(
+                    topic, 
+                    round_num,
+                    model,
+                    debate_manager.debate_history
+                )
+                
+                # Setup streaming handler
+                streaming_handler = DebateStreamingHandler(session_id)
+                
+                # Query this model with streaming
+                response = await model_manager.query_model_streaming(
+                    model,
+                    prompt,
+                    callback=streaming_handler.streaming_callback
+                )
+                
+                # Store response immediately for next model to see
+                if response.is_successful():
+                    debate_manager.debate_history.append({
+                        'round': round_num,
+                        'model': response.model_name,
+                        'content': response.response,
+                        'timestamp': time.time()
+                    })
+                
+                # Brief pause between models in same round
+                await asyncio.sleep(1)
+            
+            # Emit round completion
+            round_results = [
+                {
+                    'model': arg['model'],
+                    'response': arg['content'],
+                    'success': True
+                }
+                for arg in debate_manager.debate_history 
+                if arg['round'] == round_num
+            ]
+            
+            socketio.emit('debate_round_completed', {
+                'round': round_num,
+                'results': round_results,
+                'session_id': session_id
+            })
+            
+            # Pause between rounds
+            if round_num < DEBATE_ROUNDS:
+                await asyncio.sleep(3)
+        
+        # Generate enhanced final summary
+        socketio.emit('debate_summary_started', {
+            'session_id': session_id
+        })
+        
+        # Use best model for summary
+        summary_model = selected_models[0]
+        summary_prompt = debate_manager.create_summary_prompt(topic, debate_manager.debate_history)
+        
+        summary_response = await model_manager.query_model(summary_model, summary_prompt, stream=False)
+        
+        # Generate consensus analysis
+        consensus_analysis = debate_manager.analyze_debate_consensus(topic, debate_manager.debate_history)
+        
+        # Emit final results with enhanced analytics
+        socketio.emit('debate_completed', {
+            'topic': topic,
+            'participants': selected_models,
+            'total_rounds': DEBATE_ROUNDS,
+            'summary': {
+                'model': summary_model,
+                'content': summary_response.response if summary_response.is_successful() else "Error generating summary",
+                'success': summary_response.is_successful()
+            },
+            'consensus_analysis': consensus_analysis,
+            'debate_history': debate_manager.debate_history,
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        socketio.emit('error', {
+            'message': f'Error during enhanced debate processing: {str(e)}',
+            'session_id': session_id
+        })
+
+# ========== COMMON ENDPOINTS ==========
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection."""
+    print(f"Client connected: {request.sid}")
+    emit('connected', {'session_id': request.sid})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection."""
+    print(f"Client disconnected: {request.sid}")
+
+if __name__ == '__main__':
+    print("🚀 Starting Unified Multi-Model Application...")
+    print("📡 Server will be available at: http://localhost:5000")
+    print("🔄 Features: Q&A Mode + Enhanced Debate Mode")
+    
+    # Initialize models on startup with filtering
+    startup_models = initialize_models_on_startup()
+    
+    if not startup_models:
+        print("⚠️  Warning: No models available. The application will start but functionality will be limited.")
+        print("   Please ensure Ollama is running and models are installed.")
+    
+    print("\n🌐 Starting unified web server...")
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
