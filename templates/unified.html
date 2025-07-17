@@ -199,6 +199,115 @@
             padding: 5px 15px;
         }
 
+        /* Model Selection Styles */
+        .model-selection {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e9ecef;
+        }
+
+        .model-selection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .model-selection-header label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .selection-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .selection-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .selection-btn:hover {
+            background: #5a6268;
+        }
+
+        .selection-btn:active {
+            transform: translateY(1px);
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .model-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .model-checkbox:hover {
+            background: #e9ecef;
+        }
+
+        .model-checkbox.selected {
+            background: #e3f2fd;
+            border-color: #667eea;
+        }
+
+        .model-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .model-name {
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .model-type {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-left: auto;
+        }
+
+        .selection-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #6c757d;
+            padding-top: 10px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .selection-note {
+            font-style: italic;
+        }
+
         .question-type input[type="radio"] {
             margin-right: 8px;
         }
@@ -908,6 +1017,24 @@
                         </label>
                     </div>
 
+                    <div class="model-selection">
+                        <div class="model-selection-header">
+                            <label>🤖 Model Selection:</label>
+                            <div class="selection-controls">
+                                <button type="button" class="selection-btn" onclick="selectAllModels()">Select All</button>
+                                <button type="button" class="selection-btn" onclick="clearAllModels()">Clear All</button>
+                                <button type="button" class="selection-btn" onclick="selectOptimalModels()">Auto-Select (3)</button>
+                            </div>
+                        </div>
+                        <div class="models-grid" id="modelsGrid">
+                            Loading available models...
+                        </div>
+                        <div class="selection-summary">
+                            <span id="selectionCount">0 models selected</span>
+                            <span class="selection-note">Select 1-8 models for your query</span>
+                        </div>
+                    </div>
+
                     <div class="streaming-toggle">
                         <div class="toggle-switch active" id="streamingToggle">
                             <input type="checkbox" id="streaming" checked style="display: none;">
@@ -1498,6 +1625,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        // Update status text
                         let statusText = `${data.total_count} models (${data.coding_count} coding-capable)`;
                         if (data.note) {
                             statusText += ` • Optimized for performance`;
@@ -1505,11 +1633,109 @@
                         statusText += ` • Debate: max ${data.max_debate_participants} participants, ${data.debate_rounds} rounds`;
                         modelsList.textContent = statusText;
                         modelsInfo.classList.add('show');
+                        
+                        // Populate model selection grid
+                        populateModelGrid(data.models, data.coding_models);
                     }
                 })
                 .catch(error => {
                     console.error('Error loading models:', error);
                 });
+        }
+
+        function populateModelGrid(allModels, codingModels) {
+            const modelsGrid = document.getElementById('modelsGrid');
+            modelsGrid.innerHTML = '';
+            
+            allModels.forEach(model => {
+                const isCoding = codingModels.includes(model);
+                const modelDiv = document.createElement('div');
+                modelDiv.className = 'model-checkbox';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `model-${model}`;
+                checkbox.value = model;
+                checkbox.addEventListener('change', updateSelectionCount);
+                
+                const label = document.createElement('label');
+                label.htmlFor = `model-${model}`;
+                label.className = 'model-name';
+                label.textContent = model;
+                
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'model-type';
+                typeSpan.textContent = isCoding ? '💻' : '💭';
+                typeSpan.title = isCoding ? 'Coding capable' : 'General purpose';
+                
+                modelDiv.appendChild(checkbox);
+                modelDiv.appendChild(label);
+                modelDiv.appendChild(typeSpan);
+                
+                modelDiv.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        updateSelectionCount();
+                        updateModelCheckboxStyle(modelDiv, checkbox.checked);
+                    }
+                });
+                
+                modelsGrid.appendChild(modelDiv);
+            });
+            
+            // Auto-select 3 models initially
+            selectOptimalModels();
+        }
+
+        function updateModelCheckboxStyle(modelDiv, isSelected) {
+            if (isSelected) {
+                modelDiv.classList.add('selected');
+            } else {
+                modelDiv.classList.remove('selected');
+            }
+        }
+
+        function updateSelectionCount() {
+            const checkedBoxes = document.querySelectorAll('#modelsGrid input[type="checkbox"]:checked');
+            const count = checkedBoxes.length;
+            document.getElementById('selectionCount').textContent = `${count} model${count !== 1 ? 's' : ''} selected`;
+            
+            // Update checkbox styles
+            document.querySelectorAll('.model-checkbox').forEach(div => {
+                const checkbox = div.querySelector('input[type="checkbox"]');
+                updateModelCheckboxStyle(div, checkbox.checked);
+            });
+        }
+
+        function selectAllModels() {
+            document.querySelectorAll('#modelsGrid input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelectionCount();
+        }
+
+        function clearAllModels() {
+            document.querySelectorAll('#modelsGrid input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectionCount();
+        }
+
+        function selectOptimalModels() {
+            // Clear all first
+            clearAllModels();
+            
+            // Select first 3 models as default
+            const checkboxes = document.querySelectorAll('#modelsGrid input[type="checkbox"]');
+            for (let i = 0; i < Math.min(3, checkboxes.length); i++) {
+                checkboxes[i].checked = true;
+            }
+            updateSelectionCount();
+        }
+
+        function getSelectedModels() {
+            const checkedBoxes = document.querySelectorAll('#modelsGrid input[type="checkbox"]:checked');
+            return Array.from(checkedBoxes).map(checkbox => checkbox.value);
         }
 
         function handleSubmit() {
@@ -1518,6 +1744,17 @@
             const question = questionInput.value.trim();
             if (!question) {
                 alert('Please enter a question');
+                return;
+            }
+
+            const selectedModels = getSelectedModels();
+            if (selectedModels.length === 0) {
+                alert('Please select at least one model for your query');
+                return;
+            }
+
+            if (selectedModels.length > 8) {
+                alert('Please select no more than 8 models to avoid system overload');
                 return;
             }
 
@@ -1531,7 +1768,8 @@
             socket.emit('query_models', {
                 question: question,
                 type: questionType,
-                streaming: useStreaming
+                streaming: useStreaming,
+                selected_models: selectedModels
             });
         }
 

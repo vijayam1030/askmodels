@@ -534,6 +534,7 @@ def handle_query(data):
     question = data.get('question', '').strip()
     question_type_str = data.get('type', 'general')
     use_streaming = data.get('streaming', True)
+    selected_models = data.get('selected_models', [])
     session_id = request.sid
     
     if not question:
@@ -546,12 +547,12 @@ def handle_query(data):
     # Start processing in background
     thread = threading.Thread(
         target=process_query_async,
-        args=(question, question_type, use_streaming, session_id)
+        args=(question, question_type, use_streaming, selected_models, session_id)
     )
     thread.daemon = True
     thread.start()
 
-def process_query_async(question: str, question_type: QuestionType, use_streaming: bool, session_id: str):
+def process_query_async(question: str, question_type: QuestionType, use_streaming: bool, selected_models: list, session_id: str):
     """Process query asynchronously."""
     try:
         # Run in new event loop for thread
@@ -559,7 +560,7 @@ def process_query_async(question: str, question_type: QuestionType, use_streamin
         asyncio.set_event_loop(loop)
         
         loop.run_until_complete(
-            process_query(question, question_type, use_streaming, session_id)
+            process_query(question, question_type, use_streaming, selected_models, session_id)
         )
         
         loop.close()
@@ -570,11 +571,24 @@ def process_query_async(question: str, question_type: QuestionType, use_streamin
             'session_id': session_id
         })
 
-async def process_query(question: str, question_type: QuestionType, use_streaming: bool, session_id: str):
+async def process_query(question: str, question_type: QuestionType, use_streaming: bool, selected_models: list, session_id: str):
     """Process the actual query."""
     try:
-        # Get appropriate models
-        models_to_query = model_manager.get_models_for_question_type(question_type)
+        # Use selected models if provided, otherwise get appropriate models
+        if selected_models:
+            # Validate that selected models are available
+            available_models = model_manager.get_available_models()
+            models_to_query = [model for model in selected_models if model in available_models]
+            
+            if not models_to_query:
+                socketio.emit('error', {
+                    'message': 'None of the selected models are available',
+                    'session_id': session_id
+                })
+                return
+        else:
+            # Fallback to automatic model selection
+            models_to_query = model_manager.get_models_for_question_type(question_type)
         
         if not models_to_query:
             socketio.emit('error', {
