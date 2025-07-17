@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Debate Application</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .participant-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .participant-count {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .participant-count input[type="range"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .participant-count .count-display {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .system-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+        }
+
+        .usage-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .usage-item {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .debate-area {
+            margin-top: 30px;
+        }
+
+        .debate-status {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .debate-status.active {
+            display: block;
+        }
+
+        .round-indicator {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .debate-round {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .round-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .model-response {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .model-response:last-child {
+            border-bottom: none;
+        }
+
+        .response-header {
+            background: #fafafa;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-name {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-badge.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .response-content {
+            padding: 20px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: 'Georgia', serif;
+        }
+
+        .response-content.streaming {
+            border-left: 3px solid #667eea;
+            background: #f8f9ff;
+        }
+
+        .summary-section {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            margin-top: 30px;
+            overflow: hidden;
+        }
+
+        .summary-header {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .summary-content {
+            padding: 20px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: 'Georgia', serif;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .debate-progress {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .participants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .participant-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .refresh-btn {
+            padding: 3px 8px;
+            border: none;
+            border-radius: 4px;
+            background: #28a745;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .auto-refresh-label {
+            font-size: 12px;
+        }
+
+        .usage-bar {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            margin-top: 2px;
+        }
+
+        .usage-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗣️ Model Debate Arena 🤝</h1>
+            <p>Watch AI models engage in structured debates and reach conclusions together</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <div class="form-group">
+                    <label for="debateTopic">Debate Topic:</label>
+                    <textarea 
+                        id="debateTopic" 
+                        placeholder="Enter a topic for the models to debate... (e.g., 'Should artificial intelligence development be regulated by governments?')"
+                        rows="3"></textarea>
+                </div>
+
+                <div class="participant-selector">
+                    <label for="participantCount">Number of Debate Participants:</label>
+                    <div class="participant-count">
+                        <input 
+                            type="range" 
+                            id="participantCount" 
+                            min="2" 
+                            max="4" 
+                            value="3" 
+                            oninput="updateParticipantCount(this.value)">
+                        <div class="count-display" id="participantDisplay">3 Models</div>
+                    </div>
+                </div>
+
+                <button class="start-btn" id="startBtn" onclick="startDebate()">🚀 Start Debate</button>
+            </div>
+
+            <div class="system-info" id="systemInfo">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong>System Resources:</strong>
+                    <div>
+                        <button id="refreshSystem" class="refresh-btn">🔄 Refresh</button>
+                        <label class="auto-refresh-label">
+                            <input type="checkbox" id="autoRefresh" checked> Auto-refresh
+                        </label>
+                    </div>
+                </div>
+                <div id="systemDetails">Loading system information...</div>
+                
+                <!-- Real-time usage section -->
+                <div id="usageSection" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                    <strong>Real-time Usage:</strong>
+                    <div id="usageDetails" style="margin-top: 10px;">
+                        <div class="usage-row">
+                            <div id="cpuUsage" class="usage-item">CPU: Loading...</div>
+                            <div id="gpuUsage" class="usage-item" style="display: none;">GPU: Loading...</div>
+                        </div>
+                        <div id="memoryUsage" style="margin-bottom: 8px;">Memory: Loading...</div>
+                        <div id="diskUsage">Disk: Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="debate-area" id="debateArea">
+                <div class="debate-status" id="debateStatus">
+                    <div class="debate-progress" id="debateProgress" style="display: none;">
+                        <div class="round-indicator" id="roundIndicator">Preparing Debate...</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                        </div>
+                        <div>
+                            <strong>Participants:</strong>
+                            <div class="participants-list" id="participantsList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="debateRounds"></div>
+
+                <div class="summary-section" id="summarySection" style="display: none;">
+                    <div class="summary-header">
+                        📊 Final Analysis & Verdict
+                    </div>
+                    <div class="summary-content" id="summaryContent">
+                        Generating comprehensive summary...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO
+        const socket = io();
+        let sessionId = null;
+        let isDebating = false;
+        let currentDebate = null;
+
+        // DOM elements
+        const debateTopicInput = document.getElementById('debateTopic');
+        const participantCountSlider = document.getElementById('participantCount');
+        const participantDisplay = document.getElementById('participantDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const debateArea = document.getElementById('debateArea');
+        const debateStatus = document.getElementById('debateStatus');
+        const debateProgress = document.getElementById('debateProgress');
+        const roundIndicator = document.getElementById('roundIndicator');
+        const progressFill = document.getElementById('progressFill');
+        const participantsList = document.getElementById('participantsList');
+        const debateRounds = document.getElementById('debateRounds');
+        const summarySection = document.getElementById('summarySection');
+        const summaryContent = document.getElementById('summaryContent');
+
+        // Socket event handlers
+        socket.on('connected', (data) => {
+            sessionId = data.session_id;
+            console.log('Connected with session ID:', sessionId);
+            loadSystemInfo();
+            startSystemUsageUpdates();
+        });
+
+        socket.on('debate_started', (data) => {
+            if (data.session_id === sessionId) {
+                currentDebate = data;
+                isDebating = true;
+                
+                debateStatus.classList.add('active');
+                debateProgress.style.display = 'block';
+                roundIndicator.textContent = `Debate Started: ${data.participants.length} participants, ${data.rounds} rounds`;
+                
+                // Show participants
+                participantsList.innerHTML = '';
+                data.participants.forEach(model => {
+                    const tag = document.createElement('div');
+                    tag.className = 'participant-tag';
+                    tag.textContent = model;
+                    participantsList.appendChild(tag);
+                });
+                
+                // Clear previous debate rounds
+                debateRounds.innerHTML = '';
+                summarySection.style.display = 'none';
+                
+                startBtn.disabled = true;
+                startBtn.textContent = '🔄 Debate in Progress...';
+            }
+        });
+
+        socket.on('debate_round_started', (data) => {
+            if (data.session_id === sessionId) {
+                roundIndicator.textContent = `Round ${data.round} of ${data.total_rounds}`;
+                
+                const progress = (data.round - 1) / data.total_rounds * 100;
+                progressFill.style.width = `${progress}%`;
+                
+                // Create round container
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'debate-round';
+                roundDiv.id = `round-${data.round}`;
+                
+                const roundHeader = document.createElement('div');
+                roundHeader.className = 'round-header';
+                roundHeader.textContent = `Round ${data.round}`;
+                
+                roundDiv.appendChild(roundHeader);
+                debateRounds.appendChild(roundDiv);
+            }
+        });
+
+        socket.on('debate_model_started', (data) => {
+            if (data.session_id === sessionId) {
+                createOrUpdateModelResponse(data.model, 'processing', '');
+            }
+        });
+
+        socket.on('debate_chunk_received', (data) => {
+            if (data.session_id === sessionId) {
+                appendToModelResponse(data.model, data.chunk);
+            }
+        });
+
+        socket.on('debate_model_completed', (data) => {
+            if (data.session_id === sessionId) {
+                updateModelResponseStatus(data.model, 'completed', data.elapsed_time);
+            }
+        });
+
+        socket.on('debate_round_completed', (data) => {
+            if (data.session_id === sessionId) {
+                const progress = data.round / currentDebate.rounds * 100;
+                progressFill.style.width = `${progress}%`;
+                
+                if (data.round < currentDebate.rounds) {
+                    roundIndicator.textContent = `Round ${data.round} completed. Preparing Round ${data.round + 1}...`;
+                } else {
+                    roundIndicator.textContent = `All rounds completed. Generating final summary...`;
+                }
+            }
+        });
+
+        socket.on('debate_summary_started', (data) => {
+            if (data.session_id === sessionId) {
+                summarySection.style.display = 'block';
+                summaryContent.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing debate and generating comprehensive summary...</div>';
+            }
+        });
+
+        socket.on('debate_completed', (data) => {
+            if (data.session_id === sessionId) {
+                isDebating = false;
+                
+                roundIndicator.textContent = `Debate Completed! ${data.total_rounds} rounds with ${data.participants.length} participants`;
+                progressFill.style.width = '100%';
+                
+                // Show final summary
+                if (data.summary.success) {
+                    summaryContent.textContent = data.summary.content;
+                } else {
+                    summaryContent.innerHTML = '<div class="error-message">Error generating final summary</div>';
+                }
+                
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 Start New Debate';
+            }
+        });
+
+        socket.on('error', (data) => {
+            if (!data.session_id || data.session_id === sessionId) {
+                showError(data.message);
+                isDebating = false;
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 Start Debate';
+            }
+        });
+
+        // Functions
+        function updateParticipantCount(value) {
+            participantDisplay.textContent = `${value} Models`;
+        }
+
+        function startDebate() {
+            if (isDebating) return;
+
+            const topic = debateTopicInput.value.trim();
+            if (!topic) {
+                alert('Please enter a debate topic');
+                return;
+            }
+
+            const participantCount = parseInt(participantCountSlider.value);
+
+            socket.emit('start_debate', {
+                topic: topic,
+                participant_count: participantCount
+            });
+        }
+
+        function createOrUpdateModelResponse(modelName, status, content) {
+            // Find current round
+            const currentRoundNum = currentDebate ? 
+                document.querySelectorAll('.debate-round').length : 1;
+            
+            const roundDiv = document.getElementById(`round-${currentRoundNum}`);
+            if (!roundDiv) return;
+
+            let responseDiv = document.getElementById(`response-${modelName}-${currentRoundNum}`);
+            
+            if (!responseDiv) {
+                responseDiv = document.createElement('div');
+                responseDiv.className = 'model-response';
+                responseDiv.id = `response-${modelName}-${currentRoundNum}`;
+                
+                const header = document.createElement('div');
+                header.className = 'response-header';
+                header.innerHTML = `
+                    <span class="model-name">🤖 ${modelName}</span>
+                    <span class="status-badge ${status}" id="status-${modelName}-${currentRoundNum}">
+                        ${status === 'processing' ? 'Thinking...' : status}
+                    </span>
+                `;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'response-content';
+                contentDiv.id = `content-${modelName}-${currentRoundNum}`;
+                
+                responseDiv.appendChild(header);
+                responseDiv.appendChild(contentDiv);
+                roundDiv.appendChild(responseDiv);
+            }
+
+            const contentDiv = document.getElementById(`content-${modelName}-${currentRoundNum}`);
+            const statusBadge = document.getElementById(`status-${modelName}-${currentRoundNum}`);
+
+            if (status === 'processing') {
+                contentDiv.classList.add('streaming');
+                contentDiv.textContent = content;
+            } else if (status === 'completed') {
+                contentDiv.classList.remove('streaming');
+                if (content) contentDiv.textContent = content;
+                statusBadge.className = 'status-badge completed';
+                statusBadge.textContent = 'Completed';
+            }
+        }
+
+        function appendToModelResponse(modelName, chunk) {
+            const currentRoundNum = document.querySelectorAll('.debate-round').length;
+            const contentDiv = document.getElementById(`content-${modelName}-${currentRoundNum}`);
+            if (contentDiv) {
+                contentDiv.textContent += chunk;
+                contentDiv.scrollTop = contentDiv.scrollHeight;
+            }
+        }
+
+        function updateModelResponseStatus(modelName, status, responseTime) {
+            const currentRoundNum = document.querySelectorAll('.debate-round').length;
+            const statusBadge = document.getElementById(`status-${modelName}-${currentRoundNum}`);
+            const contentDiv = document.getElementById(`content-${modelName}-${currentRoundNum}`);
+            
+            if (statusBadge && contentDiv) {
+                contentDiv.classList.remove('streaming');
+                statusBadge.className = `status-badge ${status}`;
+                statusBadge.textContent = `Completed (${responseTime.toFixed(2)}s)`;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = `❌ ${message}`;
+            debateArea.appendChild(errorDiv);
+        }
+
+        function loadSystemInfo() {
+            fetch('/api/system-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const systemDetails = document.getElementById('systemDetails');
+                        const ram = data.ram;
+                        const gpuInfo = data.gpus.length > 0 
+                            ? `🎮 GPU: ${data.gpus.length} detected (${data.gpus.map(g => g.name).join(', ')})`
+                            : '🎮 GPU: None detected (CPU only)';
+                        
+                        systemDetails.innerHTML = `
+                            <div>💾 RAM: ${ram.available}GB available / ${ram.total}GB total (${ram.usage_percent}% used)</div>
+                            <div>🔧 CPU: ${data.cpu_cores} cores</div>
+                            <div>${gpuInfo}</div>
+                            <div>⚡ Optimal concurrency: ${data.optimal_concurrency} models</div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading system info:', error);
+                });
+        }
+
+        function loadSystemUsage() {
+            fetch('/api/system-usage')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.usage) {
+                        const usage = data.usage;
+                        
+                        // CPU Usage
+                        const cpuElement = document.getElementById('cpuUsage');
+                        if (usage.cpu) {
+                            cpuElement.innerHTML = `
+                                <strong>🔧 CPU:</strong> ${usage.cpu.percent}% 
+                                <span style="font-size: 11px; color: #666;">
+                                    (${usage.cpu.cores} cores: ${usage.cpu.per_core ? usage.cpu.per_core.slice(0, 4).join('%, ') + '%' : 'N/A'})
+                                </span>
+                            `;
+                        }
+                        
+                        // GPU Usage
+                        const gpuElement = document.getElementById('gpuUsage');
+                        if (usage.gpu && usage.gpu.length > 0) {
+                            gpuElement.style.display = 'block';
+                            
+                            if (usage.gpu.length === 1) {
+                                const gpu = usage.gpu[0];
+                                gpuElement.innerHTML = `
+                                    <strong>🎮 GPU:</strong> ${gpu.utilization_percent}% 
+                                    <span style="font-size: 11px; color: #666;">
+                                        (${gpu.name.replace('NVIDIA GeForce ', '')}, ${Math.round(gpu.memory_used_mb)}MB/${Math.round(gpu.memory_total_mb)}MB)
+                                    </span>
+                                `;
+                            } else {
+                                const avgUtil = Math.round(usage.gpu.reduce((sum, gpu) => sum + gpu.utilization_percent, 0) / usage.gpu.length);
+                                gpuElement.innerHTML = `
+                                    <strong>🎮 GPU:</strong> ${avgUtil}% avg 
+                                    <span style="font-size: 11px; color: #666;">
+                                        (${usage.gpu.length} GPUs)
+                                    </span>
+                                `;
+                            }
+                        } else {
+                            gpuElement.style.display = 'none';
+                        }
+                        
+                        // Memory Usage  
+                        const memoryElement = document.getElementById('memoryUsage');
+                        if (usage.memory) {
+                            const memPercent = usage.memory.percent || 0;
+                            const memColor = memPercent > 80 ? '#dc3545' : memPercent > 60 ? '#ffc107' : '#28a745';
+                            memoryElement.innerHTML = `
+                                <strong>💾 Memory:</strong> ${usage.memory.used_gb}GB / ${usage.memory.total_gb}GB 
+                                <span style="color: ${memColor};">(${memPercent}%)</span>
+                                <div class="usage-bar">
+                                    <div class="usage-bar-fill" style="width: ${memPercent}%; background: ${memColor};"></div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Disk Usage
+                        const diskElement = document.getElementById('diskUsage');
+                        if (usage.disk && !usage.disk.error) {
+                            const diskPercent = usage.disk.percent || 0;
+                            const diskColor = diskPercent > 90 ? '#dc3545' : diskPercent > 70 ? '#ffc107' : '#28a745';
+                            diskElement.innerHTML = `
+                                <strong>💿 Disk:</strong> ${usage.disk.used_gb}GB / ${usage.disk.total_gb}GB 
+                                <span style="color: ${diskColor};">(${diskPercent}%)</span>
+                                <div class="usage-bar">
+                                    <div class="usage-bar-fill" style="width: ${diskPercent}%; background: ${diskColor};"></div>
+                                </div>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading system usage:', error);
+                });
+        }
+
+        function startSystemUsageUpdates() {
+            loadSystemUsage();
+            
+            setInterval(() => {
+                const autoRefresh = document.getElementById('autoRefresh');
+                if (autoRefresh && autoRefresh.checked) {
+                    loadSystemUsage();
+                }
+            }, 5000);
+        }
+
+        // Event listeners
+        document.getElementById('refreshSystem').addEventListener('click', () => {
+            loadSystemInfo();
+            loadSystemUsage();
+        });
+
+        // Keyboard shortcuts
+        debateTopicInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                startDebate();
+            }
+        });
+    </script>
+</body>
+</html>
