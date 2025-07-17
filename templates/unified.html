@@ -308,6 +308,173 @@
             font-style: italic;
         }
 
+        /* Debate Model Selection Styles */
+        .debate-model-selection {
+            background: #f0f8ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #b3d9ff;
+        }
+
+        .debate-models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .debate-model-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .debate-model-card:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .debate-model-card.selected {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            box-shadow: 0 4px 12px rgba(33,150,243,0.2);
+        }
+
+        .debate-model-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .debate-model-checkbox {
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .debate-model-name {
+            font-weight: 600;
+            color: #495057;
+            flex: 1;
+        }
+
+        .debate-model-type-badge {
+            background: #6c757d;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+
+        .debate-model-type-badge.coding {
+            background: #28a745;
+        }
+
+        .debate-model-specialty {
+            font-size: 0.9em;
+            color: #2196f3;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .debate-model-description {
+            font-size: 0.85em;
+            color: #6c757d;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+
+        .debate-model-strengths {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .strength-tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+        }
+
+        /* Enhanced Q&A Model Cards */
+        .model-card.enhanced {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .model-card.enhanced:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .model-card.enhanced.selected {
+            border-color: #28a745;
+            background: #e8f5e8;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+        }
+
+        .model-card.enhanced .model-checkbox {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            transform: scale(1.3);
+        }
+
+        .model-card.enhanced .model-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            margin-right: 30px;
+        }
+
+        .model-card.enhanced .model-name {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .model-card.enhanced .model-specialty {
+            color: #6c757d;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+        }
+
+        .model-card.enhanced .model-description {
+            color: #495057;
+            font-size: 0.85em;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .model-card.enhanced .model-strengths {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
         .question-type input[type="radio"] {
             margin-right: 8px;
         }
@@ -1024,6 +1191,7 @@
                                 <button type="button" class="selection-btn" onclick="selectAllModels()">Select All</button>
                                 <button type="button" class="selection-btn" onclick="clearAllModels()">Clear All</button>
                                 <button type="button" class="selection-btn" onclick="selectOptimalModels()">Auto-Select (3)</button>
+                                <button type="button" class="selection-btn" onclick="selectDiverseModels()">Select Diverse</button>
                             </div>
                         </div>
                         <div class="models-grid" id="modelsGrid">
@@ -1068,17 +1236,21 @@
                             rows="3"></textarea>
                     </div>
 
-                    <div class="participant-selector">
-                        <label for="participantCount">Number of Debate Participants:</label>
-                        <div class="participant-count">
-                            <input 
-                                type="range" 
-                                id="participantCount" 
-                                min="2" 
-                                max="4" 
-                                value="3" 
-                                oninput="updateParticipantCount(this.value)">
-                            <div class="count-display" id="participantDisplay">3 Models</div>
+                    <div class="debate-model-selection">
+                        <div class="model-selection-header">
+                            <label>🎭 Debate Participants Selection:</label>
+                            <div class="selection-controls">
+                                <button type="button" class="selection-btn" onclick="selectAllDebateModels()">Select All</button>
+                                <button type="button" class="selection-btn" onclick="clearAllDebateModels()">Clear All</button>
+                                <button type="button" class="selection-btn" onclick="selectDiverseDebateModels()">Diverse Mix (3)</button>
+                            </div>
+                        </div>
+                        <div class="debate-models-grid" id="debateModelsGrid">
+                            Loading available models...
+                        </div>
+                        <div class="selection-summary">
+                            <span id="debateSelectionCount">0 models selected</span>
+                            <span class="selection-note">Select 2-4 models with different specialties for interesting debates</span>
                         </div>
                     </div>
 
@@ -1634,8 +1806,14 @@
                         modelsList.textContent = statusText;
                         modelsInfo.classList.add('show');
                         
-                        // Populate model selection grid
+                        // Populate Q&A model selection grid
                         populateModelGrid(data.models, data.coding_models);
+                        
+                        // Store models with info globally for Q&A enhanced cards
+                        if (data.models_with_info) {
+                            window.modelsWithInfo = data.models_with_info;
+                            populateDebateModelGrid(data.models_with_info);
+                        }
                     }
                 })
                 .catch(error => {
@@ -1647,44 +1825,137 @@
             const modelsGrid = document.getElementById('modelsGrid');
             modelsGrid.innerHTML = '';
             
-            allModels.forEach(model => {
-                const isCoding = codingModels.includes(model);
-                const modelDiv = document.createElement('div');
-                modelDiv.className = 'model-checkbox';
+            // Check if we have models with specialty info
+            const hasSpecialtyInfo = window.modelsWithInfo && window.modelsWithInfo.length > 0;
+            
+            if (hasSpecialtyInfo) {
+                // Use enhanced model cards with specialty information
+                window.modelsWithInfo.forEach(modelInfo => {
+                    const modelCard = document.createElement('div');
+                    modelCard.className = 'model-card enhanced';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `model-${modelInfo.name}`;
+                    checkbox.value = modelInfo.name;
+                    checkbox.className = 'model-checkbox';
+                    checkbox.addEventListener('change', updateSelectionCount);
+                    
+                    modelCard.innerHTML = `
+                        <div class="model-header">
+                            <span class="model-name">🤖 ${modelInfo.name}</span>
+                            <span class="model-type-badge ${modelInfo.is_coding ? 'coding' : ''}">
+                                ${modelInfo.is_coding ? '💻 Coding' : '💭 General'}
+                            </span>
+                        </div>
+                        <div class="model-specialty">${modelInfo.specialty}</div>
+                        <div class="model-description">${modelInfo.description}</div>
+                        <div class="model-strengths">
+                            ${modelInfo.strengths.map(strength => `<span class="strength-tag">${strength}</span>`).join('')}
+                        </div>
+                    `;
+                    
+                    // Insert checkbox at the beginning
+                    modelCard.insertBefore(checkbox, modelCard.firstChild);
+                    
+                    modelCard.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            updateSelectionCount();
+                            updateModelCardStyle(modelCard, checkbox.checked);
+                        }
+                    });
+                    
+                    modelsGrid.appendChild(modelCard);
+                });
+            } else {
+                // Fallback to simple model checkboxes
+                allModels.forEach(model => {
+                    const isCoding = codingModels.includes(model);
+                    const modelDiv = document.createElement('div');
+                    modelDiv.className = 'model-checkbox';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `model-${model}`;
+                    checkbox.value = model;
+                    checkbox.addEventListener('change', updateSelectionCount);
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `model-${model}`;
+                    label.className = 'model-name';
+                    label.textContent = model;
+                    
+                    const typeSpan = document.createElement('span');
+                    typeSpan.className = 'model-type';
+                    typeSpan.textContent = isCoding ? '💻' : '💭';
+                    typeSpan.title = isCoding ? 'Coding capable' : 'General purpose';
+                    
+                    modelDiv.appendChild(checkbox);
+                    modelDiv.appendChild(label);
+                    modelDiv.appendChild(typeSpan);
+                    
+                    modelDiv.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            updateSelectionCount();
+                            updateModelCheckboxStyle(modelDiv, checkbox.checked);
+                        }
+                    });
+                    
+                    modelsGrid.appendChild(modelDiv);
+                });
+            }
+            
+            // Auto-select diverse models initially
+            selectDiverseModels();
+        }
+
+        function populateDebateModelGrid(modelsWithInfo) {
+            const debateModelsGrid = document.getElementById('debateModelsGrid');
+            debateModelsGrid.innerHTML = '';
+            
+            modelsWithInfo.forEach(modelInfo => {
+                const modelCard = document.createElement('div');
+                modelCard.className = 'debate-model-card';
                 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.id = `model-${model}`;
-                checkbox.value = model;
-                checkbox.addEventListener('change', updateSelectionCount);
+                checkbox.id = `debate-model-${modelInfo.name}`;
+                checkbox.value = modelInfo.name;
+                checkbox.className = 'debate-model-checkbox';
+                checkbox.addEventListener('change', updateDebateSelectionCount);
                 
-                const label = document.createElement('label');
-                label.htmlFor = `model-${model}`;
-                label.className = 'model-name';
-                label.textContent = model;
+                modelCard.innerHTML = `
+                    <div class="debate-model-header">
+                        <span class="debate-model-name">🤖 ${modelInfo.name}</span>
+                        <span class="debate-model-type-badge ${modelInfo.is_coding ? 'coding' : ''}">
+                            ${modelInfo.is_coding ? '💻 Coding' : '💭 General'}
+                        </span>
+                    </div>
+                    <div class="debate-model-specialty">${modelInfo.specialty}</div>
+                    <div class="debate-model-description">${modelInfo.description}</div>
+                    <div class="debate-model-strengths">
+                        ${modelInfo.strengths.map(strength => `<span class="strength-tag">${strength}</span>`).join('')}
+                    </div>
+                `;
                 
-                const typeSpan = document.createElement('span');
-                typeSpan.className = 'model-type';
-                typeSpan.textContent = isCoding ? '💻' : '💭';
-                typeSpan.title = isCoding ? 'Coding capable' : 'General purpose';
+                // Insert checkbox at the beginning
+                modelCard.insertBefore(checkbox, modelCard.firstChild);
                 
-                modelDiv.appendChild(checkbox);
-                modelDiv.appendChild(label);
-                modelDiv.appendChild(typeSpan);
-                
-                modelDiv.addEventListener('click', (e) => {
+                modelCard.addEventListener('click', (e) => {
                     if (e.target !== checkbox) {
                         checkbox.checked = !checkbox.checked;
-                        updateSelectionCount();
-                        updateModelCheckboxStyle(modelDiv, checkbox.checked);
+                        updateDebateSelectionCount();
+                        updateDebateModelCardStyle(modelCard, checkbox.checked);
                     }
                 });
                 
-                modelsGrid.appendChild(modelDiv);
+                debateModelsGrid.appendChild(modelCard);
             });
             
-            // Auto-select 3 models initially
-            selectOptimalModels();
+            // Auto-select diverse models initially
+            selectDiverseDebateModels();
         }
 
         function updateModelCheckboxStyle(modelDiv, isSelected) {
@@ -1738,6 +2009,153 @@
             return Array.from(checkedBoxes).map(checkbox => checkbox.value);
         }
 
+        function selectDiverseModels() {
+            // Clear all first
+            clearAllModels();
+            
+            // Check if we have enhanced model cards with specialty info
+            const hasSpecialtyInfo = window.modelsWithInfo && window.modelsWithInfo.length > 0;
+            
+            if (hasSpecialtyInfo) {
+                // Select diverse models based on specialties
+                const modelCards = document.querySelectorAll('.model-card.enhanced');
+                const specialtyGroups = {};
+                
+                // Group models by specialty
+                modelCards.forEach(card => {
+                    const specialty = card.querySelector('.model-specialty').textContent;
+                    if (!specialtyGroups[specialty]) {
+                        specialtyGroups[specialty] = [];
+                    }
+                    specialtyGroups[specialty].push(card);
+                });
+                
+                // Select one from each specialty group up to 3
+                let selected = 0;
+                Object.keys(specialtyGroups).forEach(specialty => {
+                    if (selected < 3) {
+                        const card = specialtyGroups[specialty][0];
+                        const checkbox = card.querySelector('.model-checkbox');
+                        checkbox.checked = true;
+                        updateModelCardStyle(card, true);
+                        selected++;
+                    }
+                });
+            } else {
+                // Fallback to diverse selection based on model types
+                const checkboxes = document.querySelectorAll('#modelsGrid input[type="checkbox"]');
+                const codingModels = [];
+                const generalModels = [];
+                
+                checkboxes.forEach(cb => {
+                    const typeSpan = cb.parentElement.querySelector('.model-type');
+                    if (typeSpan && typeSpan.textContent === '💻') {
+                        codingModels.push(cb);
+                    } else {
+                        generalModels.push(cb);
+                    }
+                });
+                
+                // Select up to 3 models with preference for diversity
+                let selected = 0;
+                
+                // Select 1-2 coding models
+                for (let i = 0; i < Math.min(2, codingModels.length) && selected < 3; i++) {
+                    codingModels[i].checked = true;
+                    updateModelCheckboxStyle(codingModels[i].parentElement, true);
+                    selected++;
+                }
+                
+                // Select remaining from general models
+                for (let i = 0; i < generalModels.length && selected < 3; i++) {
+                    generalModels[i].checked = true;
+                    updateModelCheckboxStyle(generalModels[i].parentElement, true);
+                    selected++;
+                }
+            }
+            
+            updateSelectionCount();
+        }
+
+        function updateModelCardStyle(card, isSelected) {
+            if (isSelected) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
+
+        // Debate model selection functions
+        function selectDiverseDebateModels() {
+            // Clear all first
+            document.querySelectorAll('.debate-model-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateDebateModelCardStyle(cb.parentElement, false);
+            });
+            
+            // Auto-select diverse models for balanced debate
+            const modelCheckboxes = document.querySelectorAll('.debate-model-checkbox');
+            const modelCards = Array.from(modelCheckboxes).map(cb => cb.parentElement);
+            
+            // Prioritize different specialties
+            const specialtyGroups = {};
+            modelCards.forEach(card => {
+                const specialty = card.querySelector('.debate-model-specialty').textContent;
+                if (!specialtyGroups[specialty]) {
+                    specialtyGroups[specialty] = [];
+                }
+                specialtyGroups[specialty].push(card);
+            });
+            
+            // Select one from each specialty group up to 3
+            let selected = 0;
+            Object.keys(specialtyGroups).forEach(specialty => {
+                if (selected < 3) {
+                    const card = specialtyGroups[specialty][0];
+                    const checkbox = card.querySelector('.debate-model-checkbox');
+                    checkbox.checked = true;
+                    updateDebateModelCardStyle(card, true);
+                    selected++;
+                }
+            });
+            
+            updateDebateSelectionCount();
+        }
+
+        function selectAllDebateModels() {
+            document.querySelectorAll('.debate-model-checkbox').forEach(cb => {
+                cb.checked = true;
+                updateDebateModelCardStyle(cb.parentElement, true);
+            });
+            updateDebateSelectionCount();
+        }
+
+        function clearAllDebateModels() {
+            document.querySelectorAll('.debate-model-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateDebateModelCardStyle(cb.parentElement, false);
+            });
+            updateDebateSelectionCount();
+        }
+
+        function updateDebateSelectionCount() {
+            const selected = document.querySelectorAll('.debate-model-checkbox:checked').length;
+            document.getElementById('debate-selected-count').textContent = selected;
+        }
+
+        function updateDebateModelCardStyle(card, isSelected) {
+            if (isSelected) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
+
+        function getSelectedDebateModels() {
+            const checkedBoxes = document.querySelectorAll('.debate-model-checkbox:checked');
+            return Array.from(checkedBoxes).map(checkbox => checkbox.value);
+        }
+
         function handleSubmit() {
             if (isQuerying) return;
 
@@ -1786,7 +2204,16 @@
                 return;
             }
 
-            const participantCount = parseInt(participantCountSlider.value);
+            const selectedModels = getSelectedDebateModels();
+            if (selectedModels.length === 0) {
+                alert('Please select at least one model for the debate');
+                return;
+            }
+
+            if (selectedModels.length > 8) {
+                alert('Please select no more than 8 models to avoid system overload');
+                return;
+            }
 
             isDebating = true;
             startDebateBtn.disabled = true;
@@ -1794,7 +2221,7 @@
 
             socket.emit('start_debate', {
                 topic: topic,
-                participant_count: participantCount
+                selected_models: selectedModels
             });
         }
 

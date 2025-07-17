@@ -453,9 +453,144 @@ def index():
     """Main unified page."""
     return render_template('unified.html')
 
+def get_model_specialties():
+    """Get specialties and descriptions for different models."""
+    return {
+        # Llama models
+        "llama3.2": {
+            "specialty": "General Reasoning",
+            "description": "Balanced performance across tasks, good reasoning",
+            "strengths": ["reasoning", "analysis", "general knowledge"]
+        },
+        "llama3.1": {
+            "specialty": "Advanced Reasoning", 
+            "description": "Enhanced reasoning and complex problem solving",
+            "strengths": ["complex reasoning", "logic", "analysis"]
+        },
+        "llama3": {
+            "specialty": "Conversational AI",
+            "description": "Natural conversation and general assistance", 
+            "strengths": ["conversation", "helpfulness", "general tasks"]
+        },
+        "llama2": {
+            "specialty": "Stable Performance",
+            "description": "Reliable and consistent responses",
+            "strengths": ["stability", "consistency", "general use"]
+        },
+        
+        # Coding models
+        "codellama": {
+            "specialty": "Code Generation",
+            "description": "Specialized for programming and code tasks",
+            "strengths": ["coding", "debugging", "programming"]
+        },
+        "deepseek-coder": {
+            "specialty": "Advanced Coding",
+            "description": "Superior code understanding and generation",
+            "strengths": ["complex coding", "algorithms", "code review"]
+        },
+        "codegemma": {
+            "specialty": "Code Analysis",
+            "description": "Code comprehension and explanation",
+            "strengths": ["code analysis", "explanation", "debugging"]
+        },
+        "starcoder": {
+            "specialty": "Multi-language Coding",
+            "description": "Supports many programming languages",
+            "strengths": ["multi-language", "code completion", "syntax"]
+        },
+        "magicoder": {
+            "specialty": "Code Generation",
+            "description": "Efficient code generation and problem solving",
+            "strengths": ["quick coding", "algorithms", "optimization"]
+        },
+        "phind-codellama": {
+            "specialty": "Code Explanation",
+            "description": "Explains code and programming concepts",
+            "strengths": ["code explanation", "teaching", "documentation"]
+        },
+        "wizardcoder": {
+            "specialty": "Code Wizardry",
+            "description": "Advanced coding capabilities and problem solving",
+            "strengths": ["complex problems", "optimization", "best practices"]
+        },
+        
+        # Specialized models
+        "qwen2.5": {
+            "specialty": "Multilingual Intelligence",
+            "description": "Strong multilingual and reasoning capabilities",
+            "strengths": ["multilingual", "reasoning", "diverse knowledge"]
+        },
+        "mistral": {
+            "specialty": "Efficient Reasoning",
+            "description": "Fast and efficient reasoning and analysis",
+            "strengths": ["efficiency", "reasoning", "concise answers"]
+        },
+        "mixtral": {
+            "specialty": "Expert Mixture",
+            "description": "Mixture of experts for diverse capabilities",
+            "strengths": ["versatility", "expertise", "specialized knowledge"]
+        },
+        "phi3": {
+            "specialty": "Compact Intelligence",
+            "description": "Small but capable model with good performance",
+            "strengths": ["efficiency", "speed", "resource-friendly"]
+        },
+        "gemma": {
+            "specialty": "Research & Analysis",
+            "description": "Strong analytical and research capabilities",
+            "strengths": ["research", "analysis", "factual accuracy"]
+        },
+        "neural-chat": {
+            "specialty": "Conversational Expert",
+            "description": "Optimized for natural conversation",
+            "strengths": ["conversation", "empathy", "natural responses"]
+        },
+        "orca-mini": {
+            "specialty": "Quick Responses",
+            "description": "Fast and efficient for quick questions",
+            "strengths": ["speed", "efficiency", "quick answers"]
+        },
+        "tinyllama": {
+            "specialty": "Lightweight Assistant",
+            "description": "Compact model for basic tasks",
+            "strengths": ["speed", "low resource", "basic tasks"]
+        },
+        "vicuna": {
+            "specialty": "Open Assistant",
+            "description": "Open-source conversational assistant",
+            "strengths": ["helpfulness", "conversation", "general assistance"]
+        },
+        "alpaca": {
+            "specialty": "Instruction Following",
+            "description": "Good at following instructions and tasks",
+            "strengths": ["instruction following", "task completion", "helpfulness"]
+        }
+    }
+
+def get_model_info(model_name):
+    """Get specialty information for a specific model."""
+    specialties = get_model_specialties()
+    
+    # Try exact match first
+    if model_name in specialties:
+        return specialties[model_name]
+    
+    # Try partial match for versioned models
+    for key, info in specialties.items():
+        if key in model_name.lower() or model_name.lower().startswith(key):
+            return info
+    
+    # Default info for unknown models
+    return {
+        "specialty": "General Purpose",
+        "description": "Multi-purpose language model",
+        "strengths": ["general tasks", "conversation", "assistance"]
+    }
+
 @app.route('/api/models')
 def get_models():
-    """Get available models."""
+    """Get available models with specialty information."""
     global available_models
     
     # Use already filtered models, but refresh if empty
@@ -466,9 +601,22 @@ def get_models():
     # Also filter coding models
     coding_models = [m for m in coding_models if m in available_models]
     
+    # Add specialty information to each model
+    models_with_info = []
+    for model in available_models:
+        model_info = get_model_info(model)
+        models_with_info.append({
+            'name': model,
+            'specialty': model_info['specialty'],
+            'description': model_info['description'],
+            'strengths': model_info['strengths'],
+            'is_coding': model in coding_models
+        })
+    
     return jsonify({
         'success': True,
-        'models': available_models,
+        'models': available_models,  # Keep original format for compatibility
+        'models_with_info': models_with_info,  # New enhanced format
         'coding_models': coding_models,
         'total_count': len(available_models),
         'coding_count': len(coding_models),
@@ -663,26 +811,30 @@ async def process_query(question: str, question_type: QuestionType, use_streamin
 def handle_start_debate(data):
     """Handle debate start request."""
     topic = data.get('topic', '').strip()
-    participant_count = data.get('participant_count', 3)
+    selected_models = data.get('selected_models', [])
     session_id = request.sid
     
     if not topic:
         emit('error', {'message': 'Please provide a debate topic'})
         return
     
-    if participant_count < 2 or participant_count > MAX_DEBATE_MODELS:
-        emit('error', {'message': f'Participant count must be between 2 and {MAX_DEBATE_MODELS}'})
+    if not selected_models:
+        emit('error', {'message': 'Please select at least one model for the debate'})
+        return
+    
+    if len(selected_models) > MAX_DEBATE_MODELS:
+        emit('error', {'message': f'Please select no more than {MAX_DEBATE_MODELS} models'})
         return
     
     # Start processing in background
     thread = threading.Thread(
         target=process_enhanced_debate_async,
-        args=(topic, participant_count, session_id)
+        args=(topic, selected_models, session_id)
     )
     thread.daemon = True
     thread.start()
 
-def process_enhanced_debate_async(topic: str, participant_count: int, session_id: str):
+def process_enhanced_debate_async(topic: str, selected_models: list, session_id: str):
     """Process enhanced debate asynchronously."""
     try:
         # Run in new event loop for thread
@@ -690,7 +842,7 @@ def process_enhanced_debate_async(topic: str, participant_count: int, session_id
         asyncio.set_event_loop(loop)
         
         loop.run_until_complete(
-            process_enhanced_debate(topic, participant_count, session_id)
+            process_enhanced_debate(topic, selected_models, session_id)
         )
         
         loop.close()
@@ -701,7 +853,7 @@ def process_enhanced_debate_async(topic: str, participant_count: int, session_id
             'session_id': session_id
         })
 
-async def process_enhanced_debate(topic: str, participant_count: int, session_id: str):
+async def process_enhanced_debate(topic: str, selected_models: list, session_id: str):
     """Process the enhanced debate with better inter-model interaction."""
     try:
         global available_models
@@ -713,12 +865,22 @@ async def process_enhanced_debate(topic: str, participant_count: int, session_id
             })
             return
         
+        # Filter available models to only selected ones
+        debate_models = [model for model in available_models if model in selected_models]
+        
+        if not debate_models:
+            socketio.emit('error', {
+                'message': 'Selected models are not available',
+                'session_id': session_id
+            })
+            return
+        
         # Initialize enhanced debate manager
         debate_manager = EnhancedDebateManager(session_id)
         debate_manager.original_topic = topic
         
-        # Select debate participants
-        selected_models = debate_manager.select_debate_models(available_models, participant_count)
+        # Use selected debate models directly
+        selected_models = debate_models
         
         # Emit debate start
         socketio.emit('debate_started', {
