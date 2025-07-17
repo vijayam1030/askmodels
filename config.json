@@ -2,8 +2,8 @@
   "ollama_url": "http://localhost:11434",
   "coding_models": [
     "codellama",
-    "deepseek-coder",
-    "codegemma", 
+    "deepseek-coder", 
+    "codegemma",
     "starcoder",
     "magicoder",
     "phind-codellama",
@@ -11,9 +11,11 @@
     "llama3",
     "llama3.1",
     "qwen2.5-coder",
-    "granite-code"
+    "granite-code",
+    "codeqwen",
+    "stable-code"
   ],
-  "request_timeout": 60,
-  "max_concurrent_requests": 3,
-  "default_batch_size": 3
+  "request_timeout": 120,
+  "max_concurrent_requests": 2,
+  "default_batch_size": 2
 }

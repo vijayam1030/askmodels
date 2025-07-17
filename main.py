@@ -30,7 +30,8 @@ class MultiModelApp:
         progress = ProgressIndicator("🔍 Checking available models from Ollama")
         progress.start()
         
-        self.available_models = self.model_manager.get_available_models()
+        # Get models with filtering of ultra-large models for optimal performance
+        self.available_models = self.model_manager.get_available_models(force_refresh=True, filter_large=True)
         progress.stop()
         
         if not self.available_models:
@@ -38,10 +39,38 @@ class MultiModelApp:
             self.ui.display_info("Try running: ollama list")
             return False
         
+        # Display system resource information
+        self._display_system_info()
+        
         coding_models = self.model_manager.get_models_for_question_type(QuestionType.CODING)
         self.ui.display_models_status(len(self.available_models), len(coding_models))
         
         return True
+    
+    def _display_system_info(self):
+        """Display current system resource information."""
+        try:
+            info = self.model_manager.resource_manager.system_info
+            print("\n🖥️  SYSTEM RESOURCES")
+            print("-" * 30)
+            print(f"💾 RAM: {info.available_ram_gb:.1f}GB available / {info.total_ram_gb:.1f}GB total")
+            print(f"🔧 CPU: {info.cpu_cores} cores")
+            
+            if info.gpu_info:
+                print(f"🎮 GPU: {len(info.gpu_info)} detected")
+                for i, gpu in enumerate(info.gpu_info):
+                    print(f"   {i+1}. {gpu['name']} ({gpu['memory_gb']:.1f}GB)")
+            else:
+                print("🎮 GPU: None detected (CPU only)")
+            
+            # Show optimal concurrency
+            optimal_concurrent, _ = self.model_manager.resource_manager.optimize_concurrent_models(
+                self.available_models
+            )
+            print(f"⚡ Optimal concurrency: {optimal_concurrent} models")
+            
+        except Exception as e:
+            print(f"⚠️  Could not load system info: {e}")
     
     def get_user_input(self) -> Tuple[Optional[str], Optional[QuestionType], bool]:
         """Get user input and determine question type and streaming preference."""
