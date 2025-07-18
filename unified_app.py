@@ -799,19 +799,42 @@ def get_model_info(model_name):
     
     # Try exact match first
     if model_name in specialties:
-        return specialties[model_name]
+        info = specialties[model_name].copy()
+    else:
+        # Try partial match for versioned models
+        found = False
+        for key, spec_info in specialties.items():
+            if key in model_name.lower() or model_name.lower().startswith(key):
+                info = spec_info.copy()
+                found = True
+                break
+        
+        if not found:
+            # Default info for unknown models
+            info = {
+                "specialty": "General Purpose",
+                "description": "Multi-purpose language model",
+                "strengths": ["general tasks", "conversation", "assistance"]
+            }
     
-    # Try partial match for versioned models
-    for key, info in specialties.items():
-        if key in model_name.lower() or model_name.lower().startswith(key):
-            return info
+    # Simplify categories into broader groups
+    specialty = info["specialty"]
     
-    # Default info for unknown models
-    return {
-        "specialty": "General Purpose",
-        "description": "Multi-purpose language model",
-        "strengths": ["general tasks", "conversation", "assistance"]
-    }
+    # Map specific specialties to broader categories
+    if any(keyword in specialty.lower() for keyword in ["code", "coding", "programming", "development"]):
+        info["category"] = "💻 Coding & Development"
+    elif any(keyword in specialty.lower() for keyword in ["creative", "writing", "literature", "storytelling"]):
+        info["category"] = "✍️ Creative & Writing"
+    elif any(keyword in specialty.lower() for keyword in ["science", "research", "analysis", "mathematical", "reasoning"]):
+        info["category"] = "🔬 Research & Analysis"
+    elif any(keyword in specialty.lower() for keyword in ["conversation", "chat", "assistant", "helpful"]):
+        info["category"] = "💬 Conversational AI"
+    elif any(keyword in specialty.lower() for keyword in ["compact", "lightweight", "efficient", "quick", "fast"]):
+        info["category"] = "⚡ Efficient & Lightweight"
+    else:
+        info["category"] = "🤖 General Purpose"
+    
+    return info
 
 @app.route('/api/models')
 def get_models():
@@ -841,6 +864,7 @@ def get_models():
         models_with_info.append({
             'name': model,
             'specialty': model_info['specialty'],
+            'category': model_info['category'],
             'description': model_info['description'],
             'strengths': model_info['strengths'],
             'is_coding': model in coding_models

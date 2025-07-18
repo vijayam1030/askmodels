@@ -2204,46 +2204,45 @@
             console.log('DEBUG: populateModelGrid - hasSpecialtyInfo:', hasSpecialtyInfo, 'window.modelsWithInfo:', window.modelsWithInfo);
             
             if (hasSpecialtyInfo) {
-                console.log('DEBUG: Using enhanced model cards for Q&A with specialization grouping');
+                console.log('DEBUG: Using enhanced model cards for Q&A with category grouping');
                 
-                // Group models by specialty
-                const specialtyGroups = {};
+                // Group models by category
+                const categoryGroups = {};
                 window.modelsWithInfo.forEach(modelInfo => {
-                    const specialty = modelInfo.specialty;
-                    if (!specialtyGroups[specialty]) {
-                        specialtyGroups[specialty] = [];
+                    const category = modelInfo.category;
+                    if (!categoryGroups[category]) {
+                        categoryGroups[category] = [];
                     }
-                    specialtyGroups[specialty].push(modelInfo);
+                    categoryGroups[category].push(modelInfo);
                 });
                 
-                // Create sections for each specialty
-                Object.keys(specialtyGroups).sort().forEach(specialty => {
-                    const models = specialtyGroups[specialty];
+                // Create sections for each category
+                Object.keys(categoryGroups).sort().forEach(category => {
+                    const models = categoryGroups[category];
                     
-                    // Create specialty header
-                    const specialtyHeader = document.createElement('div');
-                    specialtyHeader.className = 'specialty-group-header';
-                    specialtyHeader.innerHTML = `
+                    // Create category header
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.className = 'specialty-group-header';
+                    categoryHeader.innerHTML = `
                         <h4 class="specialty-title">
-                            <span class="specialty-icon">${getSpecialtyIcon(specialty)}</span>
-                            ${specialty} (${models.length} models)
+                            ${category} (${models.length} models)
                         </h4>
                         <div class="specialty-actions">
-                            <button class="select-all-specialty" onclick="selectAllInSpecialty('${specialty}', 'qa')">Select All</button>
-                            <button class="clear-all-specialty" onclick="clearAllInSpecialty('${specialty}', 'qa')">Clear All</button>
+                            <button class="select-all-specialty" onclick="selectAllInCategory('${category.replace(/'/g, '\\\'').replace(/"/g, '\\"')}', 'qa')">Select All</button>
+                            <button class="clear-all-specialty" onclick="clearAllInCategory('${category.replace(/'/g, '\\\'').replace(/"/g, '\\"')}', 'qa')">Clear All</button>
                         </div>
                     `;
-                    modelsGrid.appendChild(specialtyHeader);
+                    modelsGrid.appendChild(categoryHeader);
                     
-                    // Create container for this specialty group
-                    const specialtyContainer = document.createElement('div');
-                    specialtyContainer.className = 'specialty-group';
-                    specialtyContainer.dataset.specialty = specialty;
+                    // Create container for this category group
+                    const categoryContainer = document.createElement('div');
+                    categoryContainer.className = 'specialty-group';
+                    categoryContainer.dataset.category = category;
                     
                     models.forEach(modelInfo => {
                         const modelCard = document.createElement('div');
                         modelCard.className = 'model-card enhanced';
-                        modelCard.dataset.specialty = specialty;
+                        modelCard.dataset.category = category;
                         
                         const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
@@ -2277,10 +2276,10 @@
                             }
                         });
                         
-                        specialtyContainer.appendChild(modelCard);
+                        categoryContainer.appendChild(modelCard);
                     });
                     
-                    modelsGrid.appendChild(specialtyContainer);
+                    modelsGrid.appendChild(categoryContainer);
                 });
             } else {
                 // Fallback to simple model checkboxes
@@ -2329,44 +2328,43 @@
             const debateModelsGrid = document.getElementById('debateModelsGrid');
             debateModelsGrid.innerHTML = '';
             
-            // Group models by specialty
-            const specialtyGroups = {};
+            // Group models by category
+            const categoryGroups = {};
             modelsWithInfo.forEach(modelInfo => {
-                const specialty = modelInfo.specialty;
-                if (!specialtyGroups[specialty]) {
-                    specialtyGroups[specialty] = [];
+                const category = modelInfo.category;
+                if (!categoryGroups[category]) {
+                    categoryGroups[category] = [];
                 }
-                specialtyGroups[specialty].push(modelInfo);
+                categoryGroups[category].push(modelInfo);
             });
             
-            // Create sections for each specialty
-            Object.keys(specialtyGroups).sort().forEach(specialty => {
-                const models = specialtyGroups[specialty];
+            // Create sections for each category
+            Object.keys(categoryGroups).sort().forEach(category => {
+                const models = categoryGroups[category];
                 
-                // Create specialty header
-                const specialtyHeader = document.createElement('div');
-                specialtyHeader.className = 'specialty-group-header debate';
-                specialtyHeader.innerHTML = `
+                // Create category header
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = 'specialty-group-header debate';
+                categoryHeader.innerHTML = `
                     <h4 class="specialty-title">
-                        <span class="specialty-icon">${getSpecialtyIcon(specialty)}</span>
-                        ${specialty} (${models.length} models)
+                        ${category} (${models.length} models)
                     </h4>
                     <div class="specialty-actions">
-                        <button class="select-all-specialty" onclick="selectAllInSpecialty('${specialty}', 'debate')">Select All</button>
-                        <button class="clear-all-specialty" onclick="clearAllInSpecialty('${specialty}', 'debate')">Clear All</button>
+                        <button class="select-all-specialty" onclick="selectAllInCategory('${category.replace(/'/g, '\\\'').replace(/"/g, '\\"')}', 'debate')">Select All</button>
+                        <button class="clear-all-specialty" onclick="clearAllInCategory('${category.replace(/'/g, '\\\'').replace(/"/g, '\\"')}', 'debate')">Clear All</button>
                     </div>
                 `;
-                debateModelsGrid.appendChild(specialtyHeader);
+                debateModelsGrid.appendChild(categoryHeader);
                 
-                // Create container for this specialty group
-                const specialtyContainer = document.createElement('div');
-                specialtyContainer.className = 'specialty-group debate';
-                specialtyContainer.dataset.specialty = specialty;
+                // Create container for this category group
+                const categoryContainer = document.createElement('div');
+                categoryContainer.className = 'specialty-group debate';
+                categoryContainer.dataset.category = category;
                 
                 models.forEach(modelInfo => {
                     const modelCard = document.createElement('div');
                     modelCard.className = 'debate-model-card';
-                    modelCard.dataset.specialty = specialty;
+                    modelCard.dataset.category = category;
                     
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
@@ -2400,10 +2398,10 @@
                         }
                     });
                     
-                    specialtyContainer.appendChild(modelCard);
+                    categoryContainer.appendChild(modelCard);
                 });
                 
-                debateModelsGrid.appendChild(specialtyContainer);
+                debateModelsGrid.appendChild(categoryContainer);
             });
             
             // Auto-select diverse models initially
@@ -2633,10 +2631,10 @@
         }
 
         // Functions to select/clear all models in a specialty group
-        function selectAllInSpecialty(specialty, mode) {
+        function selectAllInCategory(category, mode) {
             const selector = mode === 'qa' ? 
-                `.model-card[data-specialty="${specialty}"] .model-checkbox` :
-                `.debate-model-card[data-specialty="${specialty}"] .debate-model-checkbox`;
+                `.model-card[data-category="${category}"] .model-checkbox` :
+                `.debate-model-card[data-category="${category}"] .debate-model-checkbox`;
             
             document.querySelectorAll(selector).forEach(checkbox => {
                 checkbox.checked = true;
@@ -2655,10 +2653,10 @@
             }
         }
 
-        function clearAllInSpecialty(specialty, mode) {
+        function clearAllInCategory(category, mode) {
             const selector = mode === 'qa' ? 
-                `.model-card[data-specialty="${specialty}"] .model-checkbox` :
-                `.debate-model-card[data-specialty="${specialty}"] .debate-model-checkbox`;
+                `.model-card[data-category="${category}"] .model-checkbox` :
+                `.debate-model-card[data-category="${category}"] .debate-model-checkbox`;
             
             document.querySelectorAll(selector).forEach(checkbox => {
                 checkbox.checked = false;
