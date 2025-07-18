@@ -1381,6 +1381,27 @@ def handle_cancel_debate(data):
             'session_id': session_id
         })
 
+@socketio.on('cancel_query')
+def handle_cancel_query(data):
+    """Handle query cancellation request."""
+    session_id = data.get('session_id') or request.sid
+    
+    try:
+        # Emit cancellation confirmation
+        socketio.emit('query_cancelled', {
+            'message': 'Query has been cancelled by user',
+            'session_id': session_id
+        }, room=session_id)
+        
+        print(f"🛑 Query cancelled for session: {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error cancelling query: {e}")
+        socketio.emit('error', {
+            'message': f'Error cancelling query: {str(e)}',
+            'session_id': session_id
+        })
+
 # ========== COMMON ENDPOINTS ==========
 
 @socketio.on('connect')

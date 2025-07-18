@@ -396,6 +396,23 @@
             box-shadow: 0 4px 12px rgba(33,150,243,0.2);
         }
 
+        .debate-model-card.disabled {
+            opacity: 0.5;
+            background: #f1f3f4 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+
+        .debate-model-card.disabled:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .debate-model-checkbox:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .debate-model-header {
             display: flex;
             align-items: center;
@@ -1482,6 +1499,7 @@
                     </div>
 
                     <button class="action-btn" id="submitBtn">🚀 Query Models</button>
+                    <button class="action-btn cancel-btn hidden" id="cancelQueryBtn">🛑 Cancel Query</button>
 
                     <div class="models-info" id="modelsInfo">
                         <strong>Available Models:</strong> <span id="modelsList">Loading...</span>
@@ -1665,6 +1683,7 @@
         // DOM elements
         const questionInput = document.getElementById('question');
         const submitBtn = document.getElementById('submitBtn');
+        const cancelQueryBtn = document.getElementById('cancelQueryBtn');
         const qaResponses = document.getElementById('qa-responses');
         const responseControls = document.getElementById('responseControls');
         const modelsInfo = document.getElementById('modelsInfo');
@@ -1750,6 +1769,17 @@
             loadModels();
             loadSystemInfo();
             startSystemUsageUpdates();
+            
+            // Initialize debate button state
+            setTimeout(() => {
+                const startBtn = document.getElementById('startDebateBtn');
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '🚫 Select Models First';
+                    startBtn.style.background = '#6c757d';
+                    startBtn.style.cursor = 'not-allowed';
+                }
+            }, 100);
         });
 
         // ========== Q&A MODE EVENTS ==========
@@ -1796,6 +1826,17 @@
                 isQuerying = false;
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Query Models';
+                
+                // Hide cancel button
+                cancelQueryBtn.classList.add('hidden');
+            }
+        });
+
+        socket.on('query_cancelled', (data) => {
+            if (data.session_id === sessionId && activeTab === 'qa') {
+                console.log('Query cancelled:', data.message);
+                // The UI is already reset by the cancelQuery function
+                // This is just for confirmation
             }
         });
 
@@ -2059,23 +2100,15 @@
                     document.getElementById('consensusContent').innerHTML = '<div class="error-message">Consensus analysis not available</div>';
                 }
                 
-                startDebateBtn.disabled = false;
-                startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                // Don't manually enable - let updateDebateSelectionCount handle proper state
+                // startDebateBtn.disabled = false;
+                // startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
                 
                 // Hide cancel button
                 cancelDebateBtn.classList.add('hidden');
                 
                 // Re-enable model selection after debate completion
-                document.querySelectorAll('.debate-model-checkbox').forEach(checkbox => {
-                    checkbox.disabled = false;
-                });
-                document.querySelectorAll('.debate-model-card').forEach(card => {
-                    card.classList.remove('disabled');
-                    card.style.pointerEvents = 'auto';
-                });
-                document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach(button => {
-                    button.disabled = false;
-                });
+                reEnableDebateModelSelection('[COMPLETED]');
             }
         });
 
@@ -2095,16 +2128,22 @@
                 isDebating = false;
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Query Models';
-                startDebateBtn.disabled = false;
-                startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                // Don't manually set button state - let updateDebateSelectionCount handle it
+                // startDebateBtn.disabled = false;
+                // startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
                 
-                // Hide cancel button on error
+                // Hide cancel buttons on error
+                cancelQueryBtn.classList.add('hidden');
                 cancelDebateBtn.classList.add('hidden');
+                
+                // Re-enable model selection after error
+                reEnableDebateModelSelection('[ERROR]');
             }
         });
 
         // Event listeners
         submitBtn.addEventListener('click', handleSubmit);
+        cancelQueryBtn.addEventListener('click', cancelQuery);
         startDebateBtn.addEventListener('click', startDebate);
         cancelDebateBtn.addEventListener('click', cancelDebate);
 
@@ -2644,7 +2683,29 @@
 
         function updateDebateSelectionCount() {
             const selected = document.querySelectorAll('.debate-model-checkbox:checked').length;
-            document.getElementById('debate-selected-count').textContent = selected;
+            console.log(`[DEBUG] updateDebateSelectionCount: ${selected} models selected`);
+            const countElement = document.getElementById('debate-selected-count');
+            if (countElement) {
+                countElement.textContent = selected;
+            } else {
+                console.log('[DEBUG] debate-selected-count element not found');
+            }
+            
+            // Enable/disable the Start Debate button based on selection
+            const startBtn = document.getElementById('startDebateBtn');
+            if (startBtn && !isDebating) {
+                if (selected === 0) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '🚫 Select Models First';
+                    startBtn.style.background = '#6c757d';
+                    startBtn.style.cursor = 'not-allowed';
+                } else {
+                    startBtn.disabled = false;
+                    startBtn.textContent = '🗣️ Start Enhanced Debate';
+                    startBtn.style.background = '';
+                    startBtn.style.cursor = '';
+                }
+            }
         }
 
         function updateDebateModelCardStyle(card, isSelected) {
@@ -2721,7 +2782,9 @@
 
         function getSelectedDebateModels() {
             const checkedBoxes = document.querySelectorAll('.debate-model-checkbox:checked');
-            return Array.from(checkedBoxes).map(checkbox => checkbox.value);
+            const selectedModels = Array.from(checkedBoxes).map(checkbox => checkbox.value);
+            console.log(`[DEBUG] getSelectedDebateModels: Found ${checkedBoxes.length} checked boxes, models: ${selectedModels.join(', ')}`);
+            return selectedModels;
         }
 
         function handleSubmit() {
@@ -2747,6 +2810,9 @@
             isQuerying = true;
             submitBtn.disabled = true;
             submitBtn.textContent = '⏳ Processing...';
+            
+            // Show cancel button
+            cancelQueryBtn.classList.remove('hidden');
 
             socket.emit('query_models', {
                 question: question,
@@ -2756,20 +2822,47 @@
             });
         }
 
+        function cancelQuery() {
+            if (!isQuerying) return;
+
+            if (confirm('Are you sure you want to cancel the ongoing query?')) {
+                // Reset query state
+                isQuerying = false;
+
+                // Reset UI
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Query Models';
+                cancelQueryBtn.classList.add('hidden');
+
+                // Clear any pending responses
+                qaResponses.innerHTML = '<div class="info-message">Query cancelled by user</div>';
+
+                // Emit cancel event to server
+                socket.emit('cancel_query', {
+                    session_id: sessionId
+                });
+
+                console.log('Query cancelled by user');
+            }
+        }
+
         function updateParticipantCount(value) {
             participantDisplay.textContent = `${value} Models`;
         }
 
         function startDebate() {
+            console.log('[DEBUG] startDebate called, isDebating:', isDebating);
             if (isDebating) return;
 
             const topic = debateTopicInput.value.trim();
+            console.log('[DEBUG] Topic:', topic);
             if (!topic) {
                 alert('Please enter a debate topic');
                 return;
             }
 
             const selectedModels = getSelectedDebateModels();
+            console.log('[DEBUG] Selected models:', selectedModels, 'Count:', selectedModels.length);
             if (selectedModels.length === 0) {
                 alert('Please select at least one model for the debate');
                 return;
@@ -2785,17 +2878,34 @@
             isDebating = true;
             startDebateBtn.disabled = true;
             startDebateBtn.textContent = '⏳ Starting Enhanced Debate...';
+            startDebateBtn.style.background = '';
+            startDebateBtn.style.cursor = '';
             
             // Show cancel button
             cancelDebateBtn.classList.remove('hidden');
-            document.querySelectorAll('.debate-model-checkbox').forEach(checkbox => {
+            
+            // Disable model selection during debate with logging
+            console.log('Disabling model selection during debate...');
+            
+            const checkboxesToDisable = document.querySelectorAll('.debate-model-checkbox');
+            console.log(`Found ${checkboxesToDisable.length} debate model checkboxes to disable`);
+            checkboxesToDisable.forEach((checkbox, index) => {
+                console.log(`Disabling checkbox ${index}: ${checkbox.id || 'no-id'}`);
                 checkbox.disabled = true;
             });
-            document.querySelectorAll('.debate-model-card').forEach(card => {
+            
+            const cardsToDisable = document.querySelectorAll('.debate-model-card');
+            console.log(`Found ${cardsToDisable.length} debate model cards to disable`);
+            cardsToDisable.forEach((card, index) => {
+                console.log(`Disabling card ${index}: ${card.id || 'no-id'}`);
                 card.classList.add('disabled');
                 card.style.pointerEvents = 'none';
             });
-            document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach(button => {
+            
+            const buttonsToDisable = document.querySelectorAll('.select-all-specialty, .clear-all-specialty');
+            console.log(`Found ${buttonsToDisable.length} specialty buttons to disable`);
+            buttonsToDisable.forEach((button, index) => {
+                console.log(`Disabling button ${index}: ${button.textContent.trim()}`);
                 button.disabled = true;
             });
 
@@ -2806,31 +2916,63 @@
             });
         }
 
+        // Helper function to re-enable debate model selection
+        function reEnableDebateModelSelection(logPrefix = '') {
+            console.log(`${logPrefix} Re-enabling debate model selection...`);
+            
+            // Simple but effective approach - just force enable everything
+            setTimeout(() => {
+                // Force enable all checkboxes
+                document.querySelectorAll('.debate-model-checkbox').forEach((checkbox, index) => {
+                    if (checkbox.disabled) {
+                        checkbox.disabled = false;
+                        console.log(`${logPrefix} Enabled checkbox ${index}`);
+                    }
+                });
+                
+                // Force enable all cards
+                document.querySelectorAll('.debate-model-card').forEach((card, index) => {
+                    if (card.classList.contains('disabled')) {
+                        card.classList.remove('disabled');
+                        console.log(`${logPrefix} Enabled card ${index}`);
+                    }
+                    if (card.style.pointerEvents === 'none') {
+                        card.style.pointerEvents = 'auto';
+                    }
+                });
+                
+                // Force enable all buttons
+                document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach((button, index) => {
+                    if (button.disabled) {
+                        button.disabled = false;
+                        console.log(`${logPrefix} Enabled button ${index}`);
+                    }
+                });
+                
+                console.log(`${logPrefix} Force re-enabling completed`);
+                updateDebateSelectionCount(); // This will set the correct button state
+            }, 50);
+        }
+
         function cancelDebate() {
             if (!isDebating) return;
 
             if (confirm('Are you sure you want to cancel the ongoing debate?')) {
+                console.log('Starting debate cancellation...');
+                
                 // Reset debate state
                 isDebating = false;
                 currentDebateRound = 1;
                 currentDebate = null;
 
                 // Reset UI
-                startDebateBtn.disabled = false;
-                startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                // Don't manually set button state - let updateDebateSelectionCount handle it
+                // startDebateBtn.disabled = false;
+                // startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
                 cancelDebateBtn.classList.add('hidden');
 
-                // Re-enable model selection
-                document.querySelectorAll('.debate-model-checkbox').forEach(checkbox => {
-                    checkbox.disabled = false;
-                });
-                document.querySelectorAll('.debate-model-card').forEach(card => {
-                    card.classList.remove('disabled');
-                    card.style.pointerEvents = 'auto';
-                });
-                document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach(button => {
-                    button.disabled = false;
-                });
+                // Re-enable model selection using the helper function
+                reEnableDebateModelSelection('[CANCEL]');
 
                 // Hide debate progress and tabs
                 document.getElementById('debateProgress').style.display = 'none';
