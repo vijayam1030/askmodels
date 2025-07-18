@@ -282,6 +282,71 @@ class DashboardDataProvider:
                 'disk_percent': 0,
                 'available': False
             }
+    
+    def get_stock_data(self):
+        """Get stock market data for major companies."""
+        # Using Yahoo Finance alternative or simulated data for demo
+        # In a real implementation, you'd use APIs like Alpha Vantage, IEX Cloud, or Yahoo Finance
+        stocks = [
+            {'symbol': 'AAPL', 'name': 'Apple Inc.'},
+            {'symbol': 'GOOGL', 'name': 'Alphabet Inc.'},
+            {'symbol': 'MSFT', 'name': 'Microsoft Corp.'},
+            {'symbol': 'TSLA', 'name': 'Tesla Inc.'},
+            {'symbol': 'AMZN', 'name': 'Amazon.com Inc.'},
+            {'symbol': 'NVDA', 'name': 'NVIDIA Corp.'}
+        ]
+        
+        try:
+            # Try to get real data from a free API (using a financial API)
+            # For demonstration, we'll use simulated data
+            import random
+            
+            stock_data = []
+            for stock in stocks:
+                # Simulate realistic stock prices and changes
+                base_prices = {
+                    'AAPL': 150.0, 'GOOGL': 2500.0, 'MSFT': 300.0,
+                    'TSLA': 200.0, 'AMZN': 3000.0, 'NVDA': 450.0
+                }
+                
+                base_price = base_prices.get(stock['symbol'], 100.0)
+                # Add some random variation (-5% to +5%)
+                price_variation = random.uniform(-0.05, 0.05)
+                current_price = base_price * (1 + price_variation)
+                
+                # Daily change percentage (-3% to +3%)
+                daily_change = random.uniform(-3.0, 3.0)
+                
+                stock_data.append({
+                    'symbol': stock['symbol'],
+                    'name': stock['name'],
+                    'price': f"{current_price:.2f}",
+                    'change': f"{daily_change:.2f}"
+                })
+            
+            return {
+                'success': True,
+                'stocks': stock_data,
+                'source': 'simulated data',
+                'timestamp': time.time()
+            }
+            
+        except Exception as e:
+            print(f"Stock API error: {e}")
+            # Fallback to static data
+            return {
+                'success': True,
+                'stocks': [
+                    {'symbol': 'AAPL', 'name': 'Apple Inc.', 'price': '150.00', 'change': '+1.25'},
+                    {'symbol': 'GOOGL', 'name': 'Alphabet Inc.', 'price': '2500.00', 'change': '-0.85'},
+                    {'symbol': 'MSFT', 'name': 'Microsoft Corp.', 'price': '300.00', 'change': '+0.45'},
+                    {'symbol': 'TSLA', 'name': 'Tesla Inc.', 'price': '200.00', 'change': '+2.15'},
+                    {'symbol': 'AMZN', 'name': 'Amazon.com Inc.', 'price': '3000.00', 'change': '-1.05'},
+                    {'symbol': 'NVDA', 'name': 'NVIDIA Corp.', 'price': '450.00', 'change': '+3.25'}
+                ],
+                'source': 'fallback data',
+                'timestamp': time.time()
+            }
 
 # Global data provider
 data_provider = DashboardDataProvider()
@@ -324,6 +389,12 @@ def get_weather():
     """Get weather data."""
     weather = data_provider.get_weather_data()
     return jsonify(weather)
+
+@app.route('/api/dashboard/stocks')
+def get_stocks():
+    """Get stock market data."""
+    stocks = data_provider.get_stock_data()
+    return jsonify(stocks)
 
 @app.route('/api/dashboard/system')
 def get_system():
@@ -459,6 +530,11 @@ def start_background_updates():
                 if int(time.time()) % 180 == 0:
                     weather = data_provider.get_weather_data()
                     socketio.emit('weather_update', weather)
+                
+                # Update stocks every 1 minute (60s)
+                if int(time.time()) % 60 == 0:
+                    stocks = data_provider.get_stock_data()
+                    socketio.emit('stocks_update', stocks)
                 
                 # Update system stats every 5 seconds (5s)
                 if int(time.time()) % 5 == 0:
