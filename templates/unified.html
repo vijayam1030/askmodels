@@ -268,11 +268,11 @@
         }
 
         .models-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
             margin-bottom: 15px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             padding: 10px;
             background: white;
@@ -340,11 +340,11 @@
         }
 
         .debate-models-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
             margin-bottom: 15px;
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
             padding: 15px;
             background: white;
@@ -1235,8 +1235,123 @@
             50% { opacity: 0.5; }
         }
 
-        /* Responsive Dashboard */
+        /* Specialty Grouping Styles */
+        .specialty-group-header {
+            margin: 15px 0 8px 0;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .specialty-group-header:first-child {
+            margin-top: 0;
+        }
+
+        .specialty-group-header.debate {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .specialty-title {
+            margin: 0;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .specialty-icon {
+            font-size: 16px;
+        }
+
+        .specialty-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .select-all-specialty,
+        .clear-all-specialty {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .select-all-specialty {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .select-all-specialty:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .clear-all-specialty {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .clear-all-specialty:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .specialty-group {
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            padding: 0 2px;
+        }
+
+        .specialty-group.debate {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        /* Enhanced Model Cards in Groups */
+        .specialty-group .model-card,
+        .specialty-group .debate-model-card {
+            border-left: 3px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .specialty-group.debate .debate-model-card {
+            border-left-color: #f5576c;
+        }
+
+        .specialty-group .model-card:hover,
+        .specialty-group .debate-model-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
+            .specialty-group-header {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .specialty-group {
+                grid-template-columns: 1fr;
+            }
+
+            .specialty-group.debate {
+                grid-template-columns: 1fr;
+            }
+
+            .specialty-actions {
+                justify-content: center;
+            }
+            
             .dashboard-iframe-container iframe {
                 height: 600px;
             }
@@ -2089,45 +2204,83 @@
             console.log('DEBUG: populateModelGrid - hasSpecialtyInfo:', hasSpecialtyInfo, 'window.modelsWithInfo:', window.modelsWithInfo);
             
             if (hasSpecialtyInfo) {
-                console.log('DEBUG: Using enhanced model cards for Q&A');
-                // Use enhanced model cards with specialty information
+                console.log('DEBUG: Using enhanced model cards for Q&A with specialization grouping');
+                
+                // Group models by specialty
+                const specialtyGroups = {};
                 window.modelsWithInfo.forEach(modelInfo => {
-                    const modelCard = document.createElement('div');
-                    modelCard.className = 'model-card enhanced';
+                    const specialty = modelInfo.specialty;
+                    if (!specialtyGroups[specialty]) {
+                        specialtyGroups[specialty] = [];
+                    }
+                    specialtyGroups[specialty].push(modelInfo);
+                });
+                
+                // Create sections for each specialty
+                Object.keys(specialtyGroups).sort().forEach(specialty => {
+                    const models = specialtyGroups[specialty];
                     
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `model-${modelInfo.name}`;
-                    checkbox.value = modelInfo.name;
-                    checkbox.className = 'model-checkbox';
-                    checkbox.addEventListener('change', updateSelectionCount);
-                    
-                    modelCard.innerHTML = `
-                        <div class="model-header">
-                            <span class="model-name">🤖 ${modelInfo.name}</span>
-                            <span class="model-type-badge ${modelInfo.is_coding ? 'coding' : ''}">
-                                ${modelInfo.is_coding ? '💻 Coding' : '💭 General'}
-                            </span>
-                        </div>
-                        <div class="model-specialty">${modelInfo.specialty}</div>
-                        <div class="model-description">${modelInfo.description}</div>
-                        <div class="model-strengths">
-                            ${modelInfo.strengths.map(strength => `<span class="strength-tag">${strength}</span>`).join('')}
+                    // Create specialty header
+                    const specialtyHeader = document.createElement('div');
+                    specialtyHeader.className = 'specialty-group-header';
+                    specialtyHeader.innerHTML = `
+                        <h4 class="specialty-title">
+                            <span class="specialty-icon">${getSpecialtyIcon(specialty)}</span>
+                            ${specialty} (${models.length} models)
+                        </h4>
+                        <div class="specialty-actions">
+                            <button class="select-all-specialty" onclick="selectAllInSpecialty('${specialty}', 'qa')">Select All</button>
+                            <button class="clear-all-specialty" onclick="clearAllInSpecialty('${specialty}', 'qa')">Clear All</button>
                         </div>
                     `;
+                    modelsGrid.appendChild(specialtyHeader);
                     
-                    // Insert checkbox at the beginning
-                    modelCard.insertBefore(checkbox, modelCard.firstChild);
+                    // Create container for this specialty group
+                    const specialtyContainer = document.createElement('div');
+                    specialtyContainer.className = 'specialty-group';
+                    specialtyContainer.dataset.specialty = specialty;
                     
-                    modelCard.addEventListener('click', (e) => {
-                        if (e.target !== checkbox) {
-                            checkbox.checked = !checkbox.checked;
-                            updateSelectionCount();
-                            updateModelCardStyle(modelCard, checkbox.checked);
-                        }
+                    models.forEach(modelInfo => {
+                        const modelCard = document.createElement('div');
+                        modelCard.className = 'model-card enhanced';
+                        modelCard.dataset.specialty = specialty;
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `model-${modelInfo.name}`;
+                        checkbox.value = modelInfo.name;
+                        checkbox.className = 'model-checkbox';
+                        checkbox.addEventListener('change', updateSelectionCount);
+                        
+                        modelCard.innerHTML = `
+                            <div class="model-header">
+                                <span class="model-name">🤖 ${modelInfo.name}</span>
+                                <span class="model-type-badge ${modelInfo.is_coding ? 'coding' : ''}">
+                                    ${modelInfo.is_coding ? '💻 Coding' : '💭 General'}
+                                </span>
+                            </div>
+                            <div class="model-specialty">${modelInfo.specialty}</div>
+                            <div class="model-description">${modelInfo.description}</div>
+                            <div class="model-strengths">
+                                ${modelInfo.strengths.map(strength => `<span class="strength-tag">${strength}</span>`).join('')}
+                            </div>
+                        `;
+                        
+                        // Insert checkbox at the beginning
+                        modelCard.insertBefore(checkbox, modelCard.firstChild);
+                        
+                        modelCard.addEventListener('click', (e) => {
+                            if (e.target !== checkbox) {
+                                checkbox.checked = !checkbox.checked;
+                                updateSelectionCount();
+                                updateModelCardStyle(modelCard, checkbox.checked);
+                            }
+                        });
+                        
+                        specialtyContainer.appendChild(modelCard);
                     });
                     
-                    modelsGrid.appendChild(modelCard);
+                    modelsGrid.appendChild(specialtyContainer);
                 });
             } else {
                 // Fallback to simple model checkboxes
@@ -2176,43 +2329,81 @@
             const debateModelsGrid = document.getElementById('debateModelsGrid');
             debateModelsGrid.innerHTML = '';
             
+            // Group models by specialty
+            const specialtyGroups = {};
             modelsWithInfo.forEach(modelInfo => {
-                const modelCard = document.createElement('div');
-                modelCard.className = 'debate-model-card';
+                const specialty = modelInfo.specialty;
+                if (!specialtyGroups[specialty]) {
+                    specialtyGroups[specialty] = [];
+                }
+                specialtyGroups[specialty].push(modelInfo);
+            });
+            
+            // Create sections for each specialty
+            Object.keys(specialtyGroups).sort().forEach(specialty => {
+                const models = specialtyGroups[specialty];
                 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `debate-model-${modelInfo.name}`;
-                checkbox.value = modelInfo.name;
-                checkbox.className = 'debate-model-checkbox';
-                checkbox.addEventListener('change', updateDebateSelectionCount);
-                
-                modelCard.innerHTML = `
-                    <div class="debate-model-header">
-                        <span class="debate-model-name">🤖 ${modelInfo.name}</span>
-                        <span class="debate-model-type-badge ${modelInfo.is_coding ? 'coding' : ''}">
-                            ${modelInfo.is_coding ? '💻 Coding' : '💭 General'}
-                        </span>
-                    </div>
-                    <div class="debate-model-specialty">${modelInfo.specialty}</div>
-                    <div class="debate-model-description">${modelInfo.description}</div>
-                    <div class="debate-model-strengths">
-                        ${modelInfo.strengths.map(strength => `<span class="strength-tag">${strength}</span>`).join('')}
+                // Create specialty header
+                const specialtyHeader = document.createElement('div');
+                specialtyHeader.className = 'specialty-group-header debate';
+                specialtyHeader.innerHTML = `
+                    <h4 class="specialty-title">
+                        <span class="specialty-icon">${getSpecialtyIcon(specialty)}</span>
+                        ${specialty} (${models.length} models)
+                    </h4>
+                    <div class="specialty-actions">
+                        <button class="select-all-specialty" onclick="selectAllInSpecialty('${specialty}', 'debate')">Select All</button>
+                        <button class="clear-all-specialty" onclick="clearAllInSpecialty('${specialty}', 'debate')">Clear All</button>
                     </div>
                 `;
+                debateModelsGrid.appendChild(specialtyHeader);
                 
-                // Insert checkbox at the beginning
-                modelCard.insertBefore(checkbox, modelCard.firstChild);
+                // Create container for this specialty group
+                const specialtyContainer = document.createElement('div');
+                specialtyContainer.className = 'specialty-group debate';
+                specialtyContainer.dataset.specialty = specialty;
                 
-                modelCard.addEventListener('click', (e) => {
-                    if (e.target !== checkbox) {
-                        checkbox.checked = !checkbox.checked;
-                        updateDebateSelectionCount();
-                        updateDebateModelCardStyle(modelCard, checkbox.checked);
-                    }
+                models.forEach(modelInfo => {
+                    const modelCard = document.createElement('div');
+                    modelCard.className = 'debate-model-card';
+                    modelCard.dataset.specialty = specialty;
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `debate-model-${modelInfo.name}`;
+                    checkbox.value = modelInfo.name;
+                    checkbox.className = 'debate-model-checkbox';
+                    checkbox.addEventListener('change', updateDebateSelectionCount);
+                    
+                    modelCard.innerHTML = `
+                        <div class="debate-model-header">
+                            <span class="debate-model-name">🤖 ${modelInfo.name}</span>
+                            <span class="debate-model-type-badge ${modelInfo.is_coding ? 'coding' : ''}">
+                                ${modelInfo.is_coding ? '💻 Coding' : '💭 General'}
+                            </span>
+                        </div>
+                        <div class="debate-model-specialty">${modelInfo.specialty}</div>
+                        <div class="debate-model-description">${modelInfo.description}</div>
+                        <div class="debate-model-strengths">
+                            ${modelInfo.strengths.map(strength => `<span class="strength-tag">${strength}</span>`).join('')}
+                        </div>
+                    `;
+                    
+                    // Insert checkbox at the beginning
+                    modelCard.insertBefore(checkbox, modelCard.firstChild);
+                    
+                    modelCard.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            updateDebateSelectionCount();
+                            updateDebateModelCardStyle(modelCard, checkbox.checked);
+                        }
+                    });
+                    
+                    specialtyContainer.appendChild(modelCard);
                 });
                 
-                debateModelsGrid.appendChild(modelCard);
+                debateModelsGrid.appendChild(specialtyContainer);
             });
             
             // Auto-select diverse models initially
@@ -2232,10 +2423,20 @@
             const count = checkedBoxes.length;
             document.getElementById('selectionCount').textContent = `${count} model${count !== 1 ? 's' : ''} selected`;
             
-            // Update checkbox styles
-            document.querySelectorAll('.model-checkbox').forEach(div => {
+            // Update model card styles for enhanced cards
+            document.querySelectorAll('#modelsGrid .model-card').forEach(card => {
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    updateModelCardStyle(card, checkbox.checked);
+                }
+            });
+            
+            // Update checkbox styles for simple checkboxes (fallback)
+            document.querySelectorAll('#modelsGrid .model-checkbox').forEach(div => {
                 const checkbox = div.querySelector('input[type="checkbox"]');
-                updateModelCheckboxStyle(div, checkbox.checked);
+                if (checkbox) {
+                    updateModelCheckboxStyle(div, checkbox.checked);
+                }
             });
         }
 
@@ -2409,6 +2610,70 @@
                 card.classList.add('selected');
             } else {
                 card.classList.remove('selected');
+            }
+        }
+
+        // Helper function to get specialty icons
+        function getSpecialtyIcon(specialty) {
+            const iconMap = {
+                'Code Generation': '💻',
+                'Creative Writing': '✍️',
+                'Scientific Analysis': '🔬',
+                'Conversational AI': '💬',
+                'Mathematical Reasoning': '🧮',
+                'Creative Thinking': '🎨',
+                'Text Analysis': '📝',
+                'General Purpose': '🤖',
+                'Problem Solving': '🧩',
+                'Language Translation': '🌐',
+                'Data Analysis': '📊',
+                'Research Assistant': '📚'
+            };
+            return iconMap[specialty] || '🤖';
+        }
+
+        // Functions to select/clear all models in a specialty group
+        function selectAllInSpecialty(specialty, mode) {
+            const selector = mode === 'qa' ? 
+                `.model-card[data-specialty="${specialty}"] .model-checkbox` :
+                `.debate-model-card[data-specialty="${specialty}"] .debate-model-checkbox`;
+            
+            document.querySelectorAll(selector).forEach(checkbox => {
+                checkbox.checked = true;
+                const card = checkbox.closest(mode === 'qa' ? '.model-card' : '.debate-model-card');
+                if (mode === 'qa') {
+                    updateModelCardStyle(card, true);
+                } else {
+                    updateDebateModelCardStyle(card, true);
+                }
+            });
+            
+            if (mode === 'qa') {
+                updateSelectionCount();
+            } else {
+                updateDebateSelectionCount();
+            }
+        }
+
+        function clearAllInSpecialty(specialty, mode) {
+            const selector = mode === 'qa' ? 
+                `.model-card[data-specialty="${specialty}"] .model-checkbox` :
+                `.debate-model-card[data-specialty="${specialty}"] .debate-model-checkbox`;
+            
+            document.querySelectorAll(selector).forEach(checkbox => {
+                checkbox.checked = false;
+                const card = checkbox.closest(mode === 'qa' ? '.model-card' : '.debate-model-card');
+                if (mode === 'qa') {
+                    updateModelCardStyle(card, false);
+                } else {
+                    updateDebateModelCardStyle(card, false);
+                }
+            });
+            
+            if (mode === 'qa') {
+                updateSelectionCount();
+            } else {
+                updateDebateSelectionCount();
             }
         }
 
