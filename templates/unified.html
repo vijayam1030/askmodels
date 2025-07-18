@@ -1251,6 +1251,17 @@
             color: #666;
         }
 
+        .loading-text {
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+
+        .loading-text div:first-child {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+
         .spinner {
             display: inline-block;
             width: 40px;
@@ -2154,16 +2165,48 @@
                     roundIndicator.textContent = `Round ${data.round} completed. Models reviewing responses for Round ${data.round + 1}...`;
                 } else {
                     roundIndicator.textContent = `All rounds completed. Generating enhanced final analysis...`;
-                    // Switch to summary tab
+                    // Switch to summary tab immediately
                     markDebateTabInProgress('summary');
                     switchDebateTab('summary');
+                    
+                    // Show immediate loading with faster message and progress
+                    document.getElementById('summaryContent').innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div class="loading-text">
+                                <div>⚡ Fast-generating debate summary...</div>
+                                <div style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                                    Processing ${currentDebate.participants.length} participants across ${currentDebate.rounds} rounds
+                                </div>
+                                <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                    ⏱️ Maximum 10 seconds with instant fallback
+                                </div>
+                                <div style="font-size: 0.7em; color: #999; margin-top: 3px;">
+                                    Timeout protection ensures you always get results
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
             }
         });
 
         socket.on('debate_summary_started', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
-                document.getElementById('summaryContent').innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing enhanced debate and generating comprehensive verdict...</div>';
+                document.getElementById('summaryContent').innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div class="loading-text">
+                            <div>🧠 AI analyzing debate results...</div>
+                            <div style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                                Generating comprehensive verdict with voting analysis
+                            </div>
+                            <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                                Timeout protection active - maximum 10 seconds
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         });
 

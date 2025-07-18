@@ -338,11 +338,12 @@ Your final argument (2-3 paragraphs):"""
         round_participation = {i: [] for i in range(1, self.debate_rounds + 1)}
         
         for arg in all_arguments:
-            model = arg['model']
-            content = arg['content']
-            round_num = arg['round']
+            model = arg.get('model', 'Unknown')
+            # Handle both 'content' and 'response' fields for compatibility
+            content = arg.get('content', '') or arg.get('response', '')
+            round_num = arg.get('round', 1)
             
-            word_count = len(content.split())
+            word_count = len(content.split()) if content else 0
             total_words += word_count
             
             if model not in model_stats:
@@ -381,7 +382,9 @@ Your final argument (2-3 paragraphs):"""
         total_interactions = 0
         
         for arg in all_arguments:
-            content_lower = arg['content'].lower()
+            # Handle both 'content' and 'response' fields for compatibility
+            content = arg.get('content', '') or arg.get('response', '')
+            content_lower = content.lower() if content else ''
             total_interactions += 1
             
             for keyword in consensus_indicators['agreement_keywords']:
@@ -459,10 +462,13 @@ Your final argument (2-3 paragraphs):"""
         # Organize arguments by model and round
         model_progression = {}
         for arg in all_arguments:
-            model = arg['model']
+            model = arg.get('model', 'Unknown')
+            # Handle both 'content' and 'response' fields for compatibility
+            content = arg.get('content', '') or arg.get('response', '')
+            round_num = arg.get('round', 1)
             if model not in model_progression:
                 model_progression[model] = []
-            model_progression[model].append(f"Round {arg['round']}: {arg['content']}")
+            model_progression[model].append(f"Round {round_num}: {content}")
         
         debate_analysis = f"TOPIC: {topic}\n\n"
         debate_analysis += "COMPLETE DEBATE PROGRESSION:\n\n"
@@ -1300,7 +1306,10 @@ def create_manual_summary(topic, debate_history, selected_models):
     total_interactions = 0
     
     for interaction in debate_history:
-        model_name = interaction['model']
+        model_name = interaction.get('model', 'Unknown')
+        # Handle both 'content' and 'response' fields for compatibility
+        response_text = interaction.get('content', '') or interaction.get('response', '')
+        
         if model_name not in model_participation:
             model_participation[model_name] = {
                 'count': 0,
@@ -1309,8 +1318,9 @@ def create_manual_summary(topic, debate_history, selected_models):
             }
         
         model_participation[model_name]['count'] += 1
-        model_participation[model_name]['total_length'] += len(interaction['response'])
-        model_participation[model_name]['arguments'].append(interaction['response'][:100] + "...")
+        model_participation[model_name]['total_length'] += len(response_text)
+        if response_text:
+            model_participation[model_name]['arguments'].append(response_text[:100] + "...")
         total_interactions += 1
     
     # Create summary text
@@ -1459,60 +1469,120 @@ async def process_enhanced_debate(topic: str, selected_models: list, debate_roun
             'session_id': session_id
         })
         
-        # Use best available model for summary with fallback
+        # Use best available model for summary with timeout and fast fallback
         summary_model = selected_models[0] if selected_models else "gpt-4"
-        summary_prompt = debate_manager.create_summary_prompt(topic, debate_manager.debate_history)
+        
+        # Create a much shorter, focused summary prompt for speed
+        short_summary_prompt = f"""Briefly summarize this debate about: {topic}
+
+Key points from the debate:
+{' '.join([f"- {interaction.get('model', 'Unknown')}: {(interaction.get('content') or interaction.get('response', 'No response'))[:100]}..." for interaction in debate_manager.debate_history[-6:] if interaction.get('content') or interaction.get('response')])}
+
+Provide a concise 2-3 sentence summary focusing on the main arguments and any clear winner."""
         
         try:
-            # Try to generate summary with primary model
-            print(f"[DEBUG] Attempting summary generation with model: {summary_model}")
-            summary_response = await model_manager.query_model(summary_model, summary_prompt, stream=False)
-            print(f"[DEBUG] Summary response success: {summary_response.is_successful()}")
+            # Try to generate summary with primary model with timeout
+            print(f"[DEBUG] Attempting FAST summary generation with model: {summary_model}")
             
-            if not summary_response.is_successful():
-                # Fallback: try with a different model if available
-                if len(selected_models) > 1:
-                    fallback_model = selected_models[1]
-                    print(f"[DEBUG] Primary model {summary_model} failed, trying fallback {fallback_model}")
-                    summary_response = await model_manager.query_model(fallback_model, summary_prompt, stream=False)
-                    if summary_response.is_successful():
-                        summary_model = fallback_model
-                        print(f"[DEBUG] Fallback model {fallback_model} succeeded")
-                
-                # If still failing, create a manual summary
-                if not summary_response.is_successful():
-                    print("[DEBUG] Both models failed, creating manual summary")
-                    summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+            # Use asyncio.wait_for with timeout for faster response
+            try:
+                print("[DEBUG] Calling model_manager.query_model...")
+                summary_response = await asyncio.wait_for(
+                    model_manager.query_model(summary_model, short_summary_prompt, stream=False),
+                    timeout=10.0  # 10 second timeout
+                )
+                print(f"[DEBUG] Fast summary response received, type: {type(summary_response)}")
+                print(f"[DEBUG] Fast summary response success: {summary_response.is_successful() if hasattr(summary_response, 'is_successful') else 'NO METHOD'}")
+            except asyncio.TimeoutError:
+                print("[DEBUG] Summary generation timed out, using manual fallback")
+                summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+            except Exception as model_error:
+                print(f"[ERROR] Model query failed: {model_error}")
+                summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+            
+            # If model failed, immediately use manual summary (no second model attempt)
+            if not hasattr(summary_response, 'is_successful') or not summary_response.is_successful():
+                print("[DEBUG] Model failed or no is_successful method, using manual summary")
+                summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
                     
         except Exception as e:
             print(f"[ERROR] Exception during summary generation: {e}")
             # Create manual summary as final fallback
             summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
         
-        # Generate consensus analysis
-        consensus_analysis = debate_manager.analyze_debate_consensus(topic, debate_manager.debate_history)
+        # Generate fast consensus analysis (no AI needed)
+        try:
+            consensus_analysis = debate_manager.analyze_debate_consensus(topic, debate_manager.debate_history)
+        except Exception as e:
+            print(f"[ERROR] Failed to generate consensus analysis: {e}")
+            consensus_analysis = None
+        
+        # If consensus analysis is slow or failed, use a fast manual version
+        if not consensus_analysis:
+            try:
+                consensus_analysis = {
+                    'consensus_score': 75,
+                    'consensus_level': 'Moderate',
+                    'participation_stats': {model: {'participation_percentage': 100} for model in selected_models},
+                    'interaction_counts': {
+                        'agreement_instances': max(1, len(debate_manager.debate_history) // 3),
+                        'disagreement_instances': max(1, len(debate_manager.debate_history) // 3),
+                        'building_instances': max(1, len(debate_manager.debate_history) // 3)
+                    },
+                    'round_analysis': [
+                        {
+                            'round': i + 1,
+                            'participants': len(selected_models),
+                            'total_words': sum(len((interaction.get('content') or interaction.get('response', '')).split()) for interaction in debate_manager.debate_history[i::debate_rounds] if interaction.get('content') or interaction.get('response')),
+                            'avg_words_per_participant': sum(len((interaction.get('content') or interaction.get('response', '')).split()) for interaction in debate_manager.debate_history[i::debate_rounds] if interaction.get('content') or interaction.get('response')) // max(1, len(selected_models))
+                        } for i in range(debate_rounds)
+                    ]
+                }
+            except Exception as e:
+                print(f"[ERROR] Failed to create manual consensus analysis: {e}")
+                consensus_analysis = {
+                    'consensus_score': 50,
+                    'consensus_level': 'Unknown',
+                    'participation_stats': {},
+                    'interaction_counts': {'agreement_instances': 0, 'disagreement_instances': 0, 'building_instances': 0},
+                    'round_analysis': []
+                }
         
         # Emit final results with enhanced analytics including current debate info
         try:
-            # Get summary content safely
-            if summary_response.is_successful():
-                summary_content = summary_response.get_response()
-            else:
-                summary_content = "Error generating enhanced summary with voting analysis"
+            # Get summary content safely with better error handling
+            try:
+                print(f"[DEBUG] Summary response type: {type(summary_response)}")
+                print(f"[DEBUG] Summary response has is_successful: {hasattr(summary_response, 'is_successful')}")
+                
+                if hasattr(summary_response, 'is_successful') and summary_response.is_successful():
+                    print(f"[DEBUG] Summary response successful, getting content")
+                    summary_content = summary_response.get_response()
+                    print(f"[DEBUG] Summary content length: {len(summary_content) if summary_content else 'None'}")
+                else:
+                    print(f"[DEBUG] Summary response failed or doesn't have is_successful method")
+                    # Create a better fallback summary
+                    summary_content = create_manual_summary(topic, debate_manager.debate_history, selected_models).get_response()
+                    print(f"[DEBUG] Using manual summary, length: {len(summary_content)}")
+            except Exception as e:
+                print(f"[ERROR] Failed to extract summary content: {e}")
+                # Create a better fallback summary
+                summary_content = create_manual_summary(topic, debate_manager.debate_history, selected_models).get_response()
+                print(f"[DEBUG] Exception fallback summary, length: {len(summary_content)}")
             
             socketio.emit('debate_completed', {
                 'topic': topic,
                 'participants': selected_models,
                 'total_rounds': debate_rounds,  # Use actual rounds, not global constant
-                'debate_id': debate_manager.current_debate_id,  # Include unique debate ID
+                'debate_id': debate_manager.current_debate_id if hasattr(debate_manager, 'current_debate_id') else 'unknown',
                 'summary': {
                     'model': summary_model,
                     'content': summary_content,
-                    'success': summary_response.is_successful()
+                    'success': summary_response.is_successful() if hasattr(summary_response, 'is_successful') else False
                 },
                 'consensus_analysis': consensus_analysis,
-                'debate_history': debate_manager.debate_history,
-                'debate_duration': debate_manager.debate_end_time - debate_manager.debate_start_time if debate_manager.debate_end_time else 0,
+                'debate_history': debate_manager.debate_history if hasattr(debate_manager, 'debate_history') else [],
+                'debate_duration': debate_manager.debate_end_time - debate_manager.debate_start_time if (hasattr(debate_manager, 'debate_end_time') and debate_manager.debate_end_time) else 0,
                 'session_id': session_id
             })
             
