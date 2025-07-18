@@ -147,6 +147,28 @@
             border-color: #667eea;
         }
 
+        .rounds-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .rounds-select {
+            flex: 1;
+            max-width: 300px;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .rounds-info {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+
         .action-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -1236,6 +1258,19 @@
                             rows="3"></textarea>
                     </div>
 
+                    <div class="form-group">
+                        <label for="debateRounds">Number of Rounds:</label>
+                        <div class="rounds-selector">
+                            <select id="debateRounds" class="rounds-select">
+                                <option value="2">2 Rounds - Quick debate</option>
+                                <option value="3" selected>3 Rounds - Standard debate</option>
+                                <option value="4">4 Rounds - Extended debate</option>
+                                <option value="5">5 Rounds - Comprehensive debate</option>
+                            </select>
+                            <span class="rounds-info">More rounds = deeper discussion but longer time</span>
+                        </div>
+                    </div>
+
                     <div class="debate-model-selection">
                         <div class="model-selection-header">
                             <label>🎭 Debate Participants Selection:</label>
@@ -1490,22 +1525,13 @@
                     participantsList.appendChild(tag);
                 });
                 
-                // Show debate tabs and reset state
+                // Create dynamic tabs based on number of rounds
+                createDynamicDebateTabs(data.rounds);
+                
+                // Show debate tabs
                 document.getElementById('debateTabs').style.display = 'block';
                 
-                // Reset all tabs to initial state
-                document.querySelectorAll('.debate-tab-button').forEach(btn => {
-                    btn.classList.remove('completed', 'in-progress');
-                });
-                
-                // Clear all tab contents
-                document.getElementById('round1Content').innerHTML = '';
-                document.getElementById('round2Content').innerHTML = '';
-                document.getElementById('round3Content').innerHTML = '';
-                document.getElementById('summaryContent').innerHTML = 'Generating comprehensive summary...';
-                document.getElementById('consensusContent').innerHTML = 'Analysis will be available after debate completion...';
-                
-                // Start with Round 1 tab active
+                // Reset all tabs and start with first round active
                 switchDebateTab('round1');
                 
                 // Clear legacy container
@@ -1515,6 +1541,83 @@
                 startDebateBtn.textContent = '🔄 Enhanced Debate in Progress...';
             }
         });
+
+        function createDynamicDebateTabs(totalRounds) {
+            const tabNav = document.querySelector('.debate-tab-nav');
+            const tabContent = document.querySelector('.debate-tab-content');
+            
+            // Clear existing tabs
+            tabNav.innerHTML = '';
+            tabContent.innerHTML = '';
+            
+            // Create round tabs
+            for (let i = 1; i <= totalRounds; i++) {
+                // Create tab button
+                const tabButton = document.createElement('button');
+                tabButton.className = 'debate-tab-button';
+                tabButton.id = `tab-round${i}`;
+                tabButton.textContent = `Round ${i}`;
+                tabButton.onclick = () => switchDebateTab(`round${i}`);
+                if (i === 1) tabButton.classList.add('active');
+                tabNav.appendChild(tabButton);
+                
+                // Create tab content
+                const tabPanel = document.createElement('div');
+                tabPanel.id = `debate-tab-round${i}`;
+                tabPanel.className = 'debate-tab-panel';
+                if (i === 1) tabPanel.classList.add('active');
+                
+                const title = document.createElement('h3');
+                if (i === 1) {
+                    title.textContent = 'Round 1: Initial Positions';
+                } else if (i === totalRounds) {
+                    title.textContent = `Round ${i}: Final Arguments`;
+                } else {
+                    title.textContent = `Round ${i}: Counter-Arguments & Rebuttals`;
+                }
+                
+                const content = document.createElement('div');
+                content.id = `round${i}Content`;
+                
+                tabPanel.appendChild(title);
+                tabPanel.appendChild(content);
+                tabContent.appendChild(tabPanel);
+            }
+            
+            // Create Summary tab
+            const summaryButton = document.createElement('button');
+            summaryButton.className = 'debate-tab-button';
+            summaryButton.id = 'tab-summary';
+            summaryButton.innerHTML = '📝 Summary';
+            summaryButton.onclick = () => switchDebateTab('summary');
+            tabNav.appendChild(summaryButton);
+            
+            const summaryPanel = document.createElement('div');
+            summaryPanel.id = 'debate-tab-summary';
+            summaryPanel.className = 'debate-tab-panel';
+            summaryPanel.innerHTML = `
+                <h3>📝 Final Summary</h3>
+                <div id="summaryContent">Generating comprehensive summary...</div>
+            `;
+            tabContent.appendChild(summaryPanel);
+            
+            // Create Analysis tab
+            const analysisButton = document.createElement('button');
+            analysisButton.className = 'debate-tab-button';
+            analysisButton.id = 'tab-consensus';
+            analysisButton.innerHTML = '📊 Analysis';
+            analysisButton.onclick = () => switchDebateTab('consensus');
+            tabNav.appendChild(analysisButton);
+            
+            const analysisPanel = document.createElement('div');
+            analysisPanel.id = 'debate-tab-consensus';
+            analysisPanel.className = 'debate-tab-panel';
+            analysisPanel.innerHTML = `
+                <h3>📊 Consensus Analysis</h3>
+                <div id="consensusContent">Analysis will be available after debate completion...</div>
+            `;
+            tabContent.appendChild(analysisPanel);
+        }
 
         socket.on('debate_round_started', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
@@ -2215,13 +2318,16 @@
                 return;
             }
 
+            const debateRounds = parseInt(document.getElementById('debateRounds').value);
+
             isDebating = true;
             startDebateBtn.disabled = true;
             startDebateBtn.textContent = '⏳ Starting Enhanced Debate...';
 
             socket.emit('start_debate', {
                 topic: topic,
-                selected_models: selectedModels
+                selected_models: selectedModels,
+                debate_rounds: debateRounds
             });
         }
 

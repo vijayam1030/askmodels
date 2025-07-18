@@ -189,13 +189,14 @@ class DebateStreamingHandler:
 class EnhancedDebateManager:
     """Enhanced debate manager with improved inter-model interaction."""
     
-    def __init__(self, session_id):
+    def __init__(self, session_id, debate_rounds=3):
         self.session_id = session_id
         self.debate_history = []
         self.current_round = 0
         self.debate_models = []
         self.original_topic = ""
         self.model_positions = {}  # Track each model's stance
+        self.debate_rounds = debate_rounds
         
     def select_debate_models(self, available_models, count=None):
         """Select models for the debate."""
@@ -214,7 +215,7 @@ class EnhancedDebateManager:
 
 TOPIC: {topic}
 
-This is ROUND {round_num} of {DEBATE_ROUNDS}. Present your initial position on this topic.
+This is ROUND {round_num} of {self.debate_rounds}. Present your initial position on this topic.
 
 Your role: Take a thoughtful stance and argue from that perspective throughout the debate.
 
@@ -292,7 +293,7 @@ Your final argument (2-3 paragraphs):"""
         # Calculate participation statistics
         model_stats = {}
         total_words = 0
-        round_participation = {i: [] for i in range(1, DEBATE_ROUNDS + 1)}
+        round_participation = {i: [] for i in range(1, self.debate_rounds + 1)}
         
         for arg in all_arguments:
             model = arg['model']
@@ -380,7 +381,7 @@ Your final argument (2-3 paragraphs):"""
         
         # Round-by-round analysis
         round_analysis = []
-        for round_num in range(1, DEBATE_ROUNDS + 1):
+        for round_num in range(1, self.debate_rounds + 1):
             round_participants = round_participation.get(round_num, [])
             round_total_words = sum(p['words'] for p in round_participants)
             
@@ -812,6 +813,7 @@ def handle_start_debate(data):
     """Handle debate start request."""
     topic = data.get('topic', '').strip()
     selected_models = data.get('selected_models', [])
+    debate_rounds = data.get('debate_rounds', 3)  # Default to 3 rounds
     session_id = request.sid
     
     if not topic:
@@ -826,15 +828,20 @@ def handle_start_debate(data):
         emit('error', {'message': f'Please select no more than {MAX_DEBATE_MODELS} models'})
         return
     
+    # Validate rounds range
+    if debate_rounds < 2 or debate_rounds > 5:
+        emit('error', {'message': 'Number of rounds must be between 2 and 5'})
+        return
+    
     # Start processing in background
     thread = threading.Thread(
         target=process_enhanced_debate_async,
-        args=(topic, selected_models, session_id)
+        args=(topic, selected_models, debate_rounds, session_id)
     )
     thread.daemon = True
     thread.start()
 
-def process_enhanced_debate_async(topic: str, selected_models: list, session_id: str):
+def process_enhanced_debate_async(topic: str, selected_models: list, debate_rounds: int, session_id: str):
     """Process enhanced debate asynchronously."""
     try:
         # Run in new event loop for thread
@@ -842,7 +849,7 @@ def process_enhanced_debate_async(topic: str, selected_models: list, session_id:
         asyncio.set_event_loop(loop)
         
         loop.run_until_complete(
-            process_enhanced_debate(topic, selected_models, session_id)
+            process_enhanced_debate(topic, selected_models, debate_rounds, session_id)
         )
         
         loop.close()
@@ -853,7 +860,7 @@ def process_enhanced_debate_async(topic: str, selected_models: list, session_id:
             'session_id': session_id
         })
 
-async def process_enhanced_debate(topic: str, selected_models: list, session_id: str):
+async def process_enhanced_debate(topic: str, selected_models: list, debate_rounds: int, session_id: str):
     """Process the enhanced debate with better inter-model interaction."""
     try:
         global available_models
@@ -876,7 +883,7 @@ async def process_enhanced_debate(topic: str, selected_models: list, session_id:
             return
         
         # Initialize enhanced debate manager
-        debate_manager = EnhancedDebateManager(session_id)
+        debate_manager = EnhancedDebateManager(session_id, debate_rounds)
         debate_manager.original_topic = topic
         
         # Use selected debate models directly
@@ -886,17 +893,17 @@ async def process_enhanced_debate(topic: str, selected_models: list, session_id:
         socketio.emit('debate_started', {
             'topic': topic,
             'participants': selected_models,
-            'rounds': DEBATE_ROUNDS,
+            'rounds': debate_rounds,
             'session_id': session_id
         })
         
         # Conduct enhanced debate rounds
-        for round_num in range(1, DEBATE_ROUNDS + 1):
+        for round_num in range(1, debate_rounds + 1):
             debate_manager.current_round = round_num
             
             socketio.emit('debate_round_started', {
                 'round': round_num,
-                'total_rounds': DEBATE_ROUNDS,
+                'total_rounds': debate_rounds,
                 'session_id': session_id
             })
             
@@ -950,7 +957,7 @@ async def process_enhanced_debate(topic: str, selected_models: list, session_id:
             })
             
             # Pause between rounds
-            if round_num < DEBATE_ROUNDS:
+            if round_num < debate_rounds:
                 await asyncio.sleep(3)
         
         # Generate enhanced final summary
