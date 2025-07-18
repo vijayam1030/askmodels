@@ -815,16 +815,24 @@ def get_model_info(model_name):
 
 @app.route('/api/models')
 def get_models():
-    """Get available models with specialty information."""
+    """Get available models with specialty information (always refreshes from Ollama)."""
     global available_models
     
-    # Use already filtered models, but refresh if empty
-    if not available_models:
-        available_models = filter_large_models(model_manager.get_available_models(force_refresh=True))
-    
-    coding_models = model_manager.get_models_for_question_type(QuestionType.CODING)
-    # Also filter coding models
-    coding_models = [m for m in coding_models if m in available_models]
+    # Always force refresh to detect newly downloaded models
+    print("🔄 Refreshing model list from Ollama...")
+    try:
+        all_models = model_manager.get_available_models(force_refresh=True)
+        available_models = filter_large_models(all_models)
+        
+        coding_models = model_manager.get_models_for_question_type(QuestionType.CODING)
+        # Also filter coding models
+        coding_models = [m for m in coding_models if m in available_models]
+    except Exception as e:
+        print(f"❌ Error refreshing models: {e}")
+        # Fallback to existing models if refresh fails
+        if not available_models:
+            available_models = []
+        coding_models = []
     
     # Add specialty information to each model
     models_with_info = []
@@ -849,6 +857,40 @@ def get_models():
         'debate_rounds': DEBATE_ROUNDS,
         'note': 'Ultra-large models (70B+ parameters) are filtered out for optimal performance'
     })
+
+@app.route('/api/models/refresh')
+def refresh_models():
+    """Explicitly refresh the model list from Ollama."""
+    try:
+        print("🔄 Explicit model refresh requested...")
+        
+        # Get all models from Ollama
+        all_models = model_manager.get_available_models(force_refresh=True)
+        
+        # Filter out ultra-large models
+        filtered_models = filter_large_models(all_models)
+        
+        # Update global available models
+        global available_models
+        available_models = filtered_models
+        
+        return jsonify({
+            'success': True,
+            'models': filtered_models,
+            'count': len(filtered_models),
+            'total_found': len(all_models),
+            'filtered_count': len(all_models) - len(filtered_models),
+            'timestamp': time.time(),
+            'note': 'Models refreshed successfully. Ultra-large models (70B+ parameters) are automatically filtered out.'
+        })
+    except Exception as e:
+        print(f"❌ Error refreshing models: {e}")
+        return jsonify({
+            'success': False, 
+            'error': str(e),
+            'models': available_models,  # Return current models as fallback
+            'count': len(available_models)
+        }), 500
 
 @app.route('/api/config')
 def get_config():
