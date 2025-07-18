@@ -1795,7 +1795,7 @@
                     </div>
 
                     <!-- Legacy debate rounds container (hidden, for compatibility) -->
-                    <div id="debateRounds" style="display: none;"></div>
+                    <div id="legacyDebateRounds" style="display: none;"></div>
                 </div>
             </div>
 
@@ -1869,7 +1869,7 @@
         const roundIndicator = document.getElementById('roundIndicator');
         const progressFill = document.getElementById('progressFill');
         const participantsList = document.getElementById('participantsList');
-        const debateRounds = document.getElementById('debateRounds');
+        const debateRounds = document.getElementById('legacyDebateRounds');
         const summarySection = document.getElementById('summarySection');
         const summaryContent = document.getElementById('summaryContent');
 
@@ -3160,6 +3160,20 @@
                     }
                 });
                 
+                // Re-enable the debate rounds selector
+                const debateRoundsSelect = document.getElementById('debateRounds');
+                if (debateRoundsSelect && debateRoundsSelect.disabled) {
+                    debateRoundsSelect.disabled = false;
+                    console.log(`${logPrefix} Enabled debate rounds selector`);
+                }
+                
+                // Re-enable the debate topic input
+                const debateTopicInput = document.getElementById('debateTopic');
+                if (debateTopicInput && debateTopicInput.disabled) {
+                    debateTopicInput.disabled = false;
+                    console.log(`${logPrefix} Enabled debate topic input`);
+                }
+                
                 console.log(`${logPrefix} Force re-enabling completed`);
                 updateDebateSelectionCount(); // This will set the correct button state
             }, 50);
@@ -3190,7 +3204,7 @@
                 document.getElementById('debateTabs').style.display = 'none';
                 
                 // Clear debate content
-                document.getElementById('debateRounds').innerHTML = '';
+                document.getElementById('legacyDebateRounds').innerHTML = '';
                 
                 // Reset status indicators
                 const debateStatus = document.getElementById('debateStatus');
