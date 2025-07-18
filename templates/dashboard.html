@@ -16,39 +16,50 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
-            overflow-x: hidden;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
         }
 
         .dashboard-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            min-height: 100vh;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-auto-rows: minmax(auto, 1fr);
+            gap: 15px;
+            padding: 15px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .widget {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .widget:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
         }
 
         .widget-title {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             color: #2c3e50;
             border-bottom: 2px solid #3498db;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
+            flex-shrink: 0;
         }
 
         /* Time Widget */
@@ -59,20 +70,20 @@
         }
 
         .time-display {
-            font-size: 3.5em;
+            font-size: 2.8em;
             font-weight: bold;
             font-family: 'Courier New', monospace;
-            margin: 10px 0;
+            margin: 8px 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .date-display {
-            font-size: 1.2em;
-            margin-bottom: 10px;
+            font-size: 1.1em;
+            margin-bottom: 8px;
         }
 
         .day-display {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: bold;
         }
 
@@ -84,23 +95,23 @@
 
         .calendar-header {
             text-align: center;
-            font-size: 1.3em;
+            font-size: 1.2em;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-bottom: 15px;
+            gap: 3px;
+            margin-bottom: 12px;
         }
 
         .calendar-day {
             text-align: center;
-            padding: 8px 4px;
-            border-radius: 5px;
-            font-size: 0.9em;
+            padding: 6px 3px;
+            border-radius: 4px;
+            font-size: 0.85em;
         }
 
         .calendar-day.header {
@@ -136,24 +147,24 @@
         }
 
         .quote-text {
-            font-size: 1.2em;
+            font-size: 1.0em;
             font-style: italic;
-            line-height: 1.6;
-            margin-bottom: 15px;
+            line-height: 1.5;
+            margin-bottom: 12px;
             text-align: center;
         }
 
         .quote-author {
             text-align: right;
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 1.0em;
         }
 
         .quote-source {
             text-align: right;
-            font-size: 0.8em;
+            font-size: 0.75em;
             opacity: 0.8;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         /* Update Interval Styling */
@@ -171,49 +182,51 @@
         }
 
         .vocab-word {
-            font-size: 2.2em;
+            font-size: 1.8em;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .vocab-pronunciation {
             text-align: center;
-            font-size: 1.1em;
+            font-size: 0.9em;
             font-style: italic;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             opacity: 0.9;
         }
 
         .vocab-part-of-speech {
             background: rgba(255, 255, 255, 0.2);
-            padding: 4px 8px;
-            border-radius: 12px;
+            padding: 3px 6px;
+            border-radius: 10px;
             display: inline-block;
-            font-size: 0.8em;
-            margin-bottom: 10px;
+            font-size: 0.75em;
+            margin-bottom: 8px;
             font-weight: bold;
         }
 
         .vocab-definition {
-            font-size: 1.1em;
-            line-height: 1.5;
-            margin-bottom: 12px;
+            font-size: 0.95em;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            flex-grow: 1;
         }
 
         .vocab-example {
             background: rgba(255, 255, 255, 0.1);
-            padding: 8px;
-            border-radius: 6px;
+            padding: 6px;
+            border-radius: 5px;
             font-style: italic;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border-left: 3px solid rgba(255, 255, 255, 0.4);
+            font-size: 0.85em;
         }
 
         .vocab-source {
             text-align: right;
-            font-size: 0.8em;
+            font-size: 0.75em;
             opacity: 0.8;
         }
 
@@ -242,35 +255,36 @@
 
         .puzzle-category {
             background: rgba(255, 255, 255, 0.2);
-            padding: 5px 10px;
-            border-radius: 15px;
+            padding: 4px 8px;
+            border-radius: 12px;
             display: inline-block;
-            font-size: 0.8em;
-            margin-bottom: 10px;
+            font-size: 0.75em;
+            margin-bottom: 8px;
         }
 
         .puzzle-question {
-            font-size: 1.1em;
-            line-height: 1.5;
-            margin-bottom: 15px;
+            font-size: 0.95em;
+            line-height: 1.4;
+            margin-bottom: 12px;
         }
 
         .puzzle-answer {
             background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            display: none;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 0.9em;
         }
 
         .show-answer-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
+            padding: 6px 12px;
+            border-radius: 15px;
             cursor: pointer;
             transition: background 0.3s ease;
+            font-size: 0.85em;
         }
 
         .show-answer-btn:hover {
@@ -287,32 +301,33 @@
         .llm-form {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
         .model-select {
-            padding: 10px;
+            padding: 8px;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
+            border-radius: 6px;
+            font-size: 0.9em;
         }
 
         .question-input {
-            padding: 10px;
+            padding: 8px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             resize: vertical;
-            min-height: 60px;
+            min-height: 50px;
             font-family: inherit;
+            font-size: 0.9em;
         }
 
         .ask-btn {
-            padding: 12px 20px;
+            padding: 10px 16px;
             background: #ff6b6b;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
+            border-radius: 6px;
+            font-size: 0.9em;
             cursor: pointer;
             transition: background 0.3s ease;
         }
@@ -328,12 +343,13 @@
 
         .llm-response {
             background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            line-height: 1.6;
-            max-height: 300px;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            line-height: 1.5;
+            max-height: 200px;
             overflow-y: auto;
+            font-size: 0.9em;
         }
 
         .response-meta {
