@@ -1333,7 +1333,7 @@
                         </div>
                         <div class="selection-summary">
                             <span id="selectionCount">0 models selected</span>
-                            <span class="selection-note">Select as many models as you want for your query</span>
+                            <span class="selection-note">Select as many models as you want for your query 🎯</span>
                         </div>
                     </div>
 
@@ -2060,13 +2060,18 @@
                         modelsList.textContent = statusText;
                         modelsInfo.classList.add('show');
                         
-                        // Populate Q&A model selection grid
-                        populateModelGrid(data.models, data.coding_models);
-                        
-                        // Store models with info globally for Q&A enhanced cards
+                        // Store models with info globally for Q&A enhanced cards FIRST
                         if (data.models_with_info) {
                             window.modelsWithInfo = data.models_with_info;
+                            console.log('DEBUG: Loaded models_with_info:', data.models_with_info.length, 'models');
+                            
+                            // Now populate both grids with enhanced model cards
+                            populateModelGrid(data.models, data.coding_models);
                             populateDebateModelGrid(data.models_with_info);
+                        } else {
+                            console.log('DEBUG: No models_with_info found in API response');
+                            // Fallback to simple Q&A grid only
+                            populateModelGrid(data.models, data.coding_models);
                         }
                     }
                 })
@@ -2081,8 +2086,10 @@
             
             // Check if we have models with specialty info
             const hasSpecialtyInfo = window.modelsWithInfo && window.modelsWithInfo.length > 0;
+            console.log('DEBUG: populateModelGrid - hasSpecialtyInfo:', hasSpecialtyInfo, 'window.modelsWithInfo:', window.modelsWithInfo);
             
             if (hasSpecialtyInfo) {
+                console.log('DEBUG: Using enhanced model cards for Q&A');
                 // Use enhanced model cards with specialty information
                 window.modelsWithInfo.forEach(modelInfo => {
                     const modelCard = document.createElement('div');
