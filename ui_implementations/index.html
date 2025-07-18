@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Multi-Model AI Assistant - Technology Selection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 3rem 2rem;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .tech-selector {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .tech-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tech-card:hover::before {
+            left: 100%;
+        }
+
+        .tech-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .tech-name {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .tech-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .tech-features li {
+            padding: 0.5rem 0;
+            color: #555;
+            position: relative;
+        }
+
+        .tech-features li::before {
+            content: '✓';
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .launch-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .launch-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .launch-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        .launch-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .launch-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .footer p {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            margin: 0 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            .tech-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .tech-card {
+                padding: 1.5rem;
+            }
+            
+            .tech-icon {
+                font-size: 3rem;
+            }
+            
+            .tech-name {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Flask/Current Implementation Highlight */
+        .tech-card.current {
+            border: 2px solid #ffd700;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .tech-card.current::after {
+            content: 'CURRENT';
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: #ffd700;
+            color: #333;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Multi-Model AI Assistant</h1>
+        <p>Choose your preferred technology to experience the power of multi-model AI interactions</p>
+    </div>
+
+    <div class="tech-selector">
+        <div class="tech-grid">
+            <!-- Flask (Current) -->
+            <div class="tech-card current" onclick="launchApp('flask')">
+                <div class="status-indicator"></div>
+                <div class="tech-icon">🐍</div>
+                <div class="tech-name">Flask + SocketIO</div>
+                <div class="tech-description">
+                    The original full-featured implementation with real-time updates, 
+                    comprehensive debate system, and all advanced features.
+                </div>
+                <ul class="tech-features">
+                    <li>Real-time WebSocket communication</li>
+                    <li>Advanced debate system with voting</li>
+                    <li>Complete model specialization</li>
+                    <li>Cancel functionality</li>
+                    <li>Comprehensive dashboard</li>
+                </ul>
+                <button class="launch-btn" onclick="launchApp('flask')">
+                    <span>🚀 Launch Flask App</span>
+                </button>
+            </div>
+
+            <!-- Streamlit -->
+            <div class="tech-card" onclick="launchApp('streamlit')">
+                <div class="status-indicator"></div>
+                <div class="tech-icon">⚡</div>
+                <div class="tech-name">Streamlit</div>
+                <div class="tech-description">
+                    Data science friendly interface with interactive widgets, 
+                    perfect for rapid prototyping and beautiful visualizations.
+                </div>
+                <ul class="tech-features">
+                    <li>Interactive widgets and controls</li>
+                    <li>Beautiful data visualizations</li>
+                    <li>Easy deployment</li>
+                    <li>Python-native development</li>
+                    <li>Automatic UI generation</li>
+                </ul>
+                <button class="launch-btn" onclick="launchApp('streamlit')">
+                    <span>🚀 Launch Streamlit App</span>
+                </button>
+            </div>
+
+            <!-- React -->
+            <div class="tech-card" onclick="launchApp('react')">
+                <div class="status-indicator"></div>
+                <div class="tech-icon">⚛️</div>
+                <div class="tech-name">React</div>
+                <div class="tech-description">
+                    Modern, responsive web application with rich interactivity, 
+                    component-based architecture, and excellent performance.
+                </div>
+                <ul class="tech-features">
+                    <li>Component-based architecture</li>
+                    <li>Rich interactive UI</li>
+                    <li>Excellent performance</li>
+                    <li>Modern web standards</li>
+                    <li>Mobile-responsive design</li>
+                </ul>
+                <button class="launch-btn" onclick="launchApp('react')">
+                    <span>🚀 Launch React App</span>
+                </button>
+            </div>
+
+            <!-- Gradio -->
+            <div class="tech-card" onclick="launchApp('gradio')">
+                <div class="status-indicator"></div>
+                <div class="tech-icon">🎨</div>
+                <div class="tech-name">Gradio</div>
+                <div class="tech-description">
+                    Machine learning focused interface with easy sharing capabilities, 
+                    perfect for demos and AI model showcases.
+                </div>
+                <ul class="tech-features">
+                    <li>ML-focused interface</li>
+                    <li>Easy sharing and demos</li>
+                    <li>Automatic API generation</li>
+                    <li>HuggingFace integration</li>
+                    <li>Quick prototyping</li>
+                </ul>
+                <button class="launch-btn" onclick="launchApp('gradio')">
+                    <span>🚀 Launch Gradio App</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>🤖 Multi-Model AI Assistant | Available in Multiple Technologies</p>
+        <p>
+            <a href="#" onclick="showInfo('about')">About</a>
+            <a href="#" onclick="showInfo('features')">Features</a>
+            <a href="#" onclick="showInfo('support')">Support</a>
+        </p>
+    </div>
+
+    <script>
+        function launchApp(technology) {
+            // Show loading state
+            const card = event.currentTarget;
+            const button = card.querySelector('.launch-btn');
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<span>⏳ Launching...</span>';
+            button.style.opacity = '0.7';
+            
+            // Simulate launch delay
+            setTimeout(() => {
+                switch(technology) {
+                    case 'flask':
+                        window.open('http://localhost:5000', '_blank');
+                        break;
+                    case 'streamlit':
+                        window.open('http://localhost:8501', '_blank');
+                        break;
+                    case 'react':
+                        window.open('http://localhost:3000', '_blank');
+                        break;
+                    case 'gradio':
+                        window.open('http://localhost:7860', '_blank');
+                        break;
+                }
+                
+                // Reset button
+                button.innerHTML = originalText;
+                button.style.opacity = '1';
+            }, 1000);
+        }
+
+        function showInfo(section) {
+            let message = '';
+            switch(section) {
+                case 'about':
+                    message = `🤖 Multi-Model AI Assistant
+
+This application allows you to interact with multiple AI models simultaneously. You can ask questions to get diverse perspectives or set up debates between models on various topics.
+
+Features:
+• Query multiple AI models at once
+• Watch models debate topics in real-time
+• Compare different AI perspectives
+• Choose from multiple UI technologies
+
+Technologies:
+• Flask + SocketIO: Full-featured with real-time updates
+• Streamlit: Data science friendly with interactive widgets
+• React: Modern web app with rich interactivity
+• Gradio: ML-focused with easy sharing capabilities`;
+                    break;
+                case 'features':
+                    message = `🔥 Key Features
+
+Q&A Mode:
+• Ask questions to multiple models simultaneously
+• Compare different AI perspectives
+• Real-time response streaming
+• Support for different question types
+
+Debate Mode:
+• Set up debates between AI models
+• Watch real-time discussions unfold
+• Configurable number of rounds
+• Comprehensive debate summaries
+
+Dashboard:
+• Monitor system resources
+• Track model performance
+• View activity logs
+• Manage model selections
+
+All Technologies:
+• Model specialization grouping
+• Cancel functionality
+• Responsive design
+• Real-time updates`;
+                    break;
+                case 'support':
+                    message = `📞 Support & Help
+
+Getting Started:
+1. Make sure your Flask backend is running on port 5000
+2. Choose your preferred technology from the options above
+3. Click "Launch App" to open the interface
+4. Select models and start asking questions or debating!
+
+Troubleshooting:
+• Ensure Ollama is running and has models installed
+• Check that the Flask backend is accessible
+• Verify all dependencies are installed
+• For React: Run 'npm install' and 'npm start'
+• For Streamlit: Run 'streamlit run streamlit_app.py'
+• For Gradio: Run 'python gradio_app.py'
+
+For more help, check the documentation or contact support.`;
+                    break;
+            }
+            alert(message);
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.tech-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -12,6 +12,7 @@ import calendar
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 import threading
 import queue
 import time
@@ -26,6 +27,8 @@ from models import (
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'unified-secret-key-here'
+# Enable CORS for all origins to support multiple UI implementations
+CORS(app, origins=["http://localhost:3000", "http://localhost:8501", "http://localhost:7860", "http://localhost:5000"])
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Global instances

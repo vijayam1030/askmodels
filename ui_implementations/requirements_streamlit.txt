@@ -1,0 +1,4 @@
+# Requirements for Streamlit Implementation
+streamlit>=1.28.0
+requests>=2.31.0
+websocket-client>=1.6.0

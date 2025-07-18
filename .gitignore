@@ -1,3 +1,140 @@
+# ==========================================
+# COMPREHENSIVE .GITIGNORE FOR ASKMODELS
+# Multi-Technology AI Assistant Project
+# ==========================================
+
+# ===============================
+# Node.js / React / JavaScript
+# ===============================
+# Dependencies
+node_modules/
+**/node_modules/
+ui_implementations/react_app/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Include package files (essential for React app)
+!package.json
+!package-lock.json
+!**/package.json
+!**/package-lock.json
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+# public - but allow React public folder
+!**/react_app/public/
+/public/
+build/public/
+
+# Vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ===============================
+# Python
+# ===============================
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -27,8 +164,6 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -83,33 +218,18 @@ profile_default/
 ipython_config.py
 
 # pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+.python-version
 
 # pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+Pipfile.lock
 
 # poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
+poetry.lock
 
 # pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#pdm.lock
-#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
-#   in version control.
-#   https://pdm.fming.dev/#use-with-ide
 .pdm.toml
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+# PEP 582
 __pypackages__/
 
 # Celery stuff
@@ -153,17 +273,179 @@ dmypy.json
 cython_debug/
 
 # PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be added to the global gitignore or merged into this project gitignore.  For PyCharm
-#  Community Edition, use 'PyCharm CE' instead of 'PyCharm'.
 .idea/
 
-# Visual Studio Code
+# ===============================
+# AI/ML Models & Data
+# ===============================
+# Large model files
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+*.q4_0
+*.q4_1
+*.q5_0
+*.q5_1
+*.q8_0
+*.pt
+*.pth
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.onnx
+*.tflite
+*.pb
+*.trt
+*.engine
+
+# Model directories
+models/
+checkpoints/
+weights/
+embeddings/
+tokenizers/
+model_cache/
+huggingface_cache/
+transformers_cache/
+
+# Datasets
+datasets/
+data/
+*.csv
+dataset*.json
+data*.json
+training*.json
+*.jsonl
+*.parquet
+*.arrow
+*.feather
+
+# Include essential project JSON files
+!package.json
+!package-lock.json
+!tsconfig.json
+!.eslintrc.json
+!config.json
+!**/package.json
+!**/package-lock.json
+!**/tsconfig.json
+
+# Training outputs
+logs/
+runs/
+tensorboard_logs/
+wandb/
+mlruns/
+
+# ===============================
+# Streamlit
+# ===============================
+.streamlit/
+streamlit_app.log
+*.streamlit
+
+# ===============================
+# Gradio
+# ===============================
+gradio_cached_examples/
+flagged/
+*.gradio
+
+# ===============================
+# Databases
+# ===============================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+data.db
+test.db
+app.db
+
+# ===============================
+# Configuration & Secrets
+# ===============================
+# Environment variables
+.env*
+!.env.example
+!.env.template
+
+# API keys and secrets
+secrets.json
+config.json
+api_keys.txt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Local configuration files
+local_config.py
+local_settings.py
+settings_local.py
+config_local.py
+
+# ===============================
+# System Files
+# ===============================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===============================
+# Development Tools
+# ===============================
+# VS Code
 .vscode/
+!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-!.vscode/settings.json
+!.vscode/*.code-snippets
+
+# JetBrains IDEs
+.idea/
+*.swp
+*.swo
+*~
 
 # Sublime Text
 *.sublime-project
@@ -172,7 +454,8 @@ cython_debug/
 # Vim
 *.swp
 *.swo
-*~
+*.swn
+.netrwhist
 
 # Emacs
 *~
@@ -184,247 +467,126 @@ auto-save-list
 tramp
 .\#*
 
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
+# ===============================
+# Deployment & Cloud
+# ===============================
+# Docker
+Dockerfile.local
+docker-compose.override.yml
+.dockerignore
 
-# Icon must end with two \r
-Icon
+# Kubernetes
+*.kubeconfig
 
-# Thumbnails
-._*
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
 
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
+# AWS
+.aws/
+*.pem
 
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+# Google Cloud
+.gcloud/
+service-account-*.json
+gcloud-credentials.json
+google-cloud-*.json
 
-# Windows
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
+# Azure
+.azure/
 
-# Dump file
-*.stackdump
-
-# Folder config file
-[Dd]esktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-
-# Windows shortcuts
-*.lnk
-
-# Linux
-*~
-
-# temporary files which can be created if a process still has a handle open of a deleted file
-.fuse_hidden*
-
-# KDE directory preferences
-.directory
-
-# Linux trash folder which might appear on any partition or disk
-.Trash-*
-
-# .nfs files are created when an open file is removed but is still being accessed
-.nfs*
-
-# Application-specific ignores
-# ================================
-
-# Configuration files with sensitive data
-config_local.json
-config.dev.json
-config.prod.json
-*.secret
-*.private
-.env.local
-.env.production
-.env.development
-
-# Logs and temporary files
-*.log
+# ===============================
+# Temporary & Cache Files
+# ===============================
+# General temporary files
+tmp/
+temp/
 *.tmp
 *.temp
-temp/
-tmp/
-logs/
-log/
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-data/
-database/
-
-# Model cache and data
-models/
-model_cache/
-cache/
-.cache/
-*.pkl
-*.pickle
-*.model
-*.weights
-
-# API keys and secrets
-api_keys.txt
-secrets.json
-.secrets
-tokens.json
-*.key
-*.pem
-*.p12
-*.pfx
-
-# Development and testing
-test_output/
-test_results/
-benchmarks/
-performance/
-profile_results/
-.coverage*
-htmlcov/
-
-# Documentation builds
-docs/build/
-docs/_build/
-site/
-
-# Backup files
+*.swp
+*.swo
 *.bak
 *.backup
-*~
 *.orig
-*.save
+*.log
+*.cache
 
-# IDE and editor files
-.project
-.pydevproject
-.settings/
-.metadata/
-*.launch
-*.iml
-*.ipr
-*.iws
-
-# Node.js (if using for frontend tooling)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
-
-# Frontend build artifacts (if any)
-static/dist/
-static/build/
-public/build/
-
-# Flask session files
-flask_session/
-session/
-
-# WebSocket and Socket.IO
-socketio_sessions/
-
-# Jupyter notebook checkpoints
-.ipynb_checkpoints/
-
-# Virtual environment directories
-venv*/
-virtualenv*/
-conda-env/
-.conda/
-
-# Package manager files
-Pipfile
-Pipfile.lock
-poetry.lock
-requirements-dev.txt
-requirements.local.txt
-
-# Application-specific temp files
-responses/
-query_history/
-user_sessions/
-uploads/
-downloads/
-
-# System files
-.system
-.lock
-*.lock
-pid
-*.pid
-
-# Monitoring and profiling
-.monitoring/
-.profiling/
-*.prof
-*.profile
-
-# Deployment files
-docker-compose.override.yml
-.docker/
-deployment/
-k8s/
-helm/
-terraform/
-ansible/
-
-# CI/CD
-.github/workflows/personal_*
-.gitlab-ci.local.yml
-.circleci/config.local.yml
-
-# OS generated files
-.directory
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-
-# Archive files
-*.7z
-*.dmg
-*.gz
-*.iso
-*.jar
-*.rar
-*.tar
+# Compressed files
 *.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.rar
+*.7z
 
-# IDE workspace files
-workspace.xml
-tasks.xml
-dictionaries/
+# ===============================
+# Project-Specific
+# ===============================
+# Backup files
+*.backup
+.gitignore.backup
 
-# Local development overrides
-local_*
-dev_*
-development_*
-debug_*
+# Local test files
+test_local.py
+local_test.py
+scratch.py
+temp_test.py
+
+# Output files
+output/
+results/
+generated/
+exports/
+
+# Custom model configurations
+custom_models.json
+user_models.json
+
+# Session files
+sessions/
+*.session
+
+# Performance logs
+performance.log
+timing.log
+debug.log
+
+# User-specific files
+user_data/
+personal/
+private/
+
+# ===============================
+# Security & Privacy
+# ===============================
+# SSH keys
+*.ssh/
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# SSL certificates
+*.crt
+*.csr
+*.key
+*.pem
+
+# Password files
+passwords.txt
+auth.txt
+credentials.txt
+
+# JWT tokens
+*.jwt
+
+# OAuth configs
+oauth_config.json
+client_secrets.json
+
+# ===============================
+# END OF .GITIGNORE
+# ===============================
