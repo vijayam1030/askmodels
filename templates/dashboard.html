@@ -144,6 +144,12 @@
         .quote-widget {
             background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
             color: white;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .quote-widget:hover {
+            transform: translateY(-2px);
         }
 
         .quote-text {
@@ -179,6 +185,12 @@
         .vocab-widget {
             background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
             color: white;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .vocab-widget:hover {
+            transform: translateY(-2px);
         }
 
         .vocab-word {
@@ -251,6 +263,12 @@
         .puzzle-widget {
             background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
             color: white;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .puzzle-widget:hover {
+            transform: translateY(-2px);
         }
 
         .puzzle-category {
@@ -570,8 +588,8 @@
         </div>
 
         <!-- Vocabulary Widget -->
-        <div class="widget vocab-widget">
-            <div class="widget-title">📚 Word of the Day <span class="update-interval">(updates every 300s)</span></div>
+        <div class="widget vocab-widget" onclick="refreshVocabulary()">
+            <div class="widget-title">📚 Word of the Day <span class="update-interval">(click to refresh)</span></div>
             <div class="vocab-word" id="vocabWord">Loading...</div>
             <div class="vocab-pronunciation" id="vocabPronunciation">...</div>
             <div class="vocab-part-of-speech" id="vocabPartOfSpeech">...</div>
@@ -581,19 +599,19 @@
         </div>
 
         <!-- Philosophy Quote Widget -->
-        <div class="widget quote-widget">
-            <div class="widget-title">💭 Philosophy Quote <span class="update-interval">(updates every 120s)</span></div>
+        <div class="widget quote-widget" onclick="refreshQuote()">
+            <div class="widget-title">💭 Philosophy Quote <span class="update-interval">(click to refresh)</span></div>
             <div class="quote-text" id="quoteText">Loading wisdom...</div>
             <div class="quote-author" id="quoteAuthor">...</div>
             <div class="quote-source" id="quoteSource">...</div>
         </div>
 
         <!-- Daily Puzzle Widget -->
-        <div class="widget puzzle-widget">
-            <div class="widget-title">🧩 Daily Puzzle <span class="update-interval">(updates every 300s)</span></div>
+        <div class="widget puzzle-widget" onclick="refreshPuzzle()">
+            <div class="widget-title">🧩 Daily Puzzle <span class="update-interval">(click to refresh)</span></div>
             <div class="puzzle-category" id="puzzleCategory">Loading...</div>
             <div class="puzzle-question" id="puzzleQuestion">Loading puzzle...</div>
-            <button class="show-answer-btn" onclick="togglePuzzleAnswer()">Show Answer</button>
+            <button class="show-answer-btn" onclick="event.stopPropagation(); togglePuzzleAnswer()">Show Answer</button>
             <div class="puzzle-answer" id="puzzleAnswer">...</div>
         </div>
 
@@ -778,6 +796,48 @@
             fetch('/api/dashboard/stocks').then(r => r.json()).then(updateStocks);
             fetch('/api/dashboard/system').then(r => r.json()).then(updateSystemStats);
             loadModels();
+            
+            // Start the ticking clock
+            startLiveClock();
+        }
+
+        // Live clock function
+        function startLiveClock() {
+            function updateClock() {
+                const now = new Date();
+                const time = now.toLocaleTimeString();
+                const date = now.toLocaleDateString();
+                const day = now.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                document.getElementById('timeDisplay').textContent = time;
+                document.getElementById('dateDisplay').textContent = date;
+                document.getElementById('dayDisplay').textContent = day;
+            }
+            
+            // Update immediately
+            updateClock();
+            
+            // Update every second
+            setInterval(updateClock, 1000);
+        }
+
+        // Refresh functions for clickable widgets
+        function refreshVocabulary() {
+            document.getElementById('vocabWord').textContent = 'Loading...';
+            fetch('/api/dashboard/vocabulary').then(r => r.json()).then(updateVocabulary);
+        }
+
+        function refreshQuote() {
+            document.getElementById('quoteText').textContent = 'Loading wisdom...';
+            fetch('/api/dashboard/quote').then(r => r.json()).then(updateQuote);
+        }
+
+        function refreshPuzzle() {
+            document.getElementById('puzzleQuestion').textContent = 'Loading puzzle...';
+            fetch('/api/dashboard/puzzle').then(r => r.json()).then(updatePuzzle).catch(error => {
+                console.error('Error fetching puzzle:', error);
+                document.getElementById('puzzleQuestion').textContent = 'Error loading puzzle';
+            });
         }
 
         // Update functions
