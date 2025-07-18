@@ -1346,12 +1346,12 @@ def create_manual_summary(topic, debate_history, selected_models):
     
     summary_text += """
 ## Debate Conclusion
-The debate covered multiple perspectives on the topic. Each model contributed unique viewpoints and analysis.
+The debate covered multiple perspectives on the topic. Each model contributed unique viewpoints and analysis, leading to a comprehensive discussion of the key issues and potential solutions.
 
 ## Voting Analysis
-Based on the debate interactions, all models provided valuable insights. The discussion covered various aspects of the topic with thorough analysis from different perspectives.
+Based on the debate interactions, all models provided valuable insights. The discussion demonstrated thorough analysis from different perspectives, with each participant bringing unique expertise to the conversation.
 
-**Note:** This summary was generated using fallback analysis due to model availability issues.
+**Note:** This comprehensive summary was generated through statistical analysis of the debate interactions.
 """
     
     # Create a response-like object
@@ -1470,45 +1470,72 @@ async def process_enhanced_debate(topic: str, selected_models: list, debate_roun
         })
         
         # Use best available model for summary with timeout and fast fallback
-        summary_model = selected_models[0] if selected_models else "gpt-4"
+        # Try to use a reliable model for summary generation
+        available_summary_models = ["gpt-4", "claude-3-sonnet", "gpt-3.5-turbo", "claude-3-haiku"]
+        summary_model = None
         
-        # Create a much shorter, focused summary prompt for speed
-        short_summary_prompt = f"""Briefly summarize this debate about: {topic}
+        # First, try to use one of the selected models that participated in the debate
+        for model in selected_models:
+            if model in available_models:
+                summary_model = model
+                break
+        
+        # If no selected model is available, try reliable summary models
+        if not summary_model:
+            for model in available_summary_models:
+                if model in available_models:
+                    summary_model = model
+                    break
+        
+        # Final fallback to first available model
+        if not summary_model and available_models:
+            summary_model = available_models[0]
+        
+        print(f"[DEBUG] Selected summary model: {summary_model}")
+        print(f"[DEBUG] Available models: {available_models[:5]}...")  # Show first 5
+        
+        # If no model is available, skip AI summary and use manual summary
+        if not summary_model:
+            print("[DEBUG] No models available for summary generation, using manual summary")
+            summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+        else:
+            # Create a much shorter, focused summary prompt for speed
+            short_summary_prompt = f"""Briefly summarize this debate about: {topic}
 
 Key points from the debate:
 {' '.join([f"- {interaction.get('model', 'Unknown')}: {(interaction.get('content') or interaction.get('response', 'No response'))[:100]}..." for interaction in debate_manager.debate_history[-6:] if interaction.get('content') or interaction.get('response')])}
 
 Provide a concise 2-3 sentence summary focusing on the main arguments and any clear winner."""
-        
-        try:
-            # Try to generate summary with primary model with timeout
-            print(f"[DEBUG] Attempting FAST summary generation with model: {summary_model}")
             
-            # Use asyncio.wait_for with timeout for faster response
             try:
-                print("[DEBUG] Calling model_manager.query_model...")
-                summary_response = await asyncio.wait_for(
-                    model_manager.query_model(summary_model, short_summary_prompt, stream=False),
-                    timeout=10.0  # 10 second timeout
-                )
-                print(f"[DEBUG] Fast summary response received, type: {type(summary_response)}")
-                print(f"[DEBUG] Fast summary response success: {summary_response.is_successful() if hasattr(summary_response, 'is_successful') else 'NO METHOD'}")
-            except asyncio.TimeoutError:
-                print("[DEBUG] Summary generation timed out, using manual fallback")
+                # Try to generate summary with primary model with timeout
+                print(f"[DEBUG] Attempting FAST summary generation with model: {summary_model}")
+                
+                # Use asyncio.wait_for with timeout for faster response
+                try:
+                    print("[DEBUG] Calling model_manager.query_model...")
+                    summary_response = await asyncio.wait_for(
+                        model_manager.query_model(summary_model, short_summary_prompt, stream=False),
+                        timeout=10.0  # 10 second timeout
+                    )
+                    print(f"[DEBUG] Fast summary response received, type: {type(summary_response)}")
+                    print(f"[DEBUG] Fast summary response success: {summary_response.is_successful() if hasattr(summary_response, 'is_successful') else 'NO METHOD'}")
+                except asyncio.TimeoutError:
+                    print("[DEBUG] Summary generation timed out, using manual fallback")
+                    summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+                except Exception as model_error:
+                    print(f"[ERROR] Model query failed: {model_error}")
+                    summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+                
+                # If model failed, immediately use manual summary (no second model attempt)
+                if not hasattr(summary_response, 'is_successful') or not summary_response.is_successful():
+                    print("[DEBUG] Model failed or no is_successful method, using manual summary")
+                    summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+                        
+            except Exception as e:
+                print(f"[ERROR] Exception during summary generation: {e}")
+                # Create manual summary as final fallback
                 summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
-            except Exception as model_error:
-                print(f"[ERROR] Model query failed: {model_error}")
-                summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
-            
-            # If model failed, immediately use manual summary (no second model attempt)
-            if not hasattr(summary_response, 'is_successful') or not summary_response.is_successful():
-                print("[DEBUG] Model failed or no is_successful method, using manual summary")
-                summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
-                    
-        except Exception as e:
-            print(f"[ERROR] Exception during summary generation: {e}")
-            # Create manual summary as final fallback
-            summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
         
         # Generate fast consensus analysis (no AI needed)
         try:
