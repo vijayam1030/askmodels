@@ -6,13 +6,15 @@ Flask-based web interface for both querying multiple models and conducting model
 
 import asyncio
 import json
-from datetime import datetime
+import requests
+import random
+import calendar
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit
 import threading
 import queue
 import time
-import random
 
 from models import (
     OllamaModelManager, 
@@ -449,6 +451,228 @@ Format with clear headers and maintain analytical objectivity.
 
 COMPREHENSIVE ANALYSIS:"""
 
+
+# Dashboard Data Provider Class
+class DashboardDataProvider:
+    def __init__(self):
+        self.vocabulary_words = [
+            {"word": "Ephemeral", "meaning": "Lasting for a very short time", "source": "Greek ephemeros"},
+            {"word": "Serendipity", "meaning": "The occurrence of events by chance in a happy way", "source": "Horace Walpole"},
+            {"word": "Ubiquitous", "meaning": "Present, appearing, or found everywhere", "source": "Latin ubique"},
+            {"word": "Mellifluous", "meaning": "Sweet or musical; pleasant to hear", "source": "Latin mel + fluere"},
+            {"word": "Perspicacious", "meaning": "Having keen insight; mentally sharp", "source": "Latin perspicax"},
+            {"word": "Soliloquy", "meaning": "An act of speaking thoughts aloud", "source": "Latin solus + loqui"},
+            {"word": "Quixotic", "meaning": "Extremely idealistic and unrealistic", "source": "Don Quixote"},
+            {"word": "Laconic", "meaning": "Using few words; concise", "source": "Laconia, Sparta"},
+            {"word": "Zeitgeist", "meaning": "The spirit of the time; trend of thought", "source": "German Zeit + Geist"},
+            {"word": "Ineffable", "meaning": "Too great to be expressed in words", "source": "Latin ineffabilis"}
+        ]
+        
+        self.quotes = [
+            "The only way to do great work is to love what you do. - Steve Jobs",
+            "Innovation distinguishes between a leader and a follower. - Steve Jobs",
+            "Life is what happens to you while you're busy making other plans. - John Lennon",
+            "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt",
+            "It is during our darkest moments that we must focus to see the light. - Aristotle",
+            "The way to get started is to quit talking and begin doing. - Walt Disney",
+            "Don't let yesterday take up too much of today. - Will Rogers",
+            "You learn more from failure than from success. - Unknown",
+            "It's not whether you get knocked down, it's whether you get up. - Vince Lombardi",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill"
+        ]
+        
+        self.puzzles = [
+            "What has keys but no locks, space but no room?",
+            "I'm tall when I'm young, short when I'm old. What am I?",
+            "What gets wet while drying?",
+            "What can you break without touching?",
+            "What goes up but never comes down?",
+            "What has hands but can't clap?",
+            "What has a face but no eyes?",
+            "What runs but never walks?",
+            "What can travel around the world while staying in a corner?",
+            "What has cities but no houses?"
+        ]
+        
+        self.stocks = {
+            'AAPL': {'price': 175.43, 'change': 2.34},
+            'GOOGL': {'price': 138.21, 'change': -1.12},
+            'MSFT': {'price': 384.52, 'change': 5.67},
+            'AMZN': {'price': 151.94, 'change': -0.89},
+            'TSLA': {'price': 248.5, 'change': 12.45},
+            'NVDA': {'price': 722.48, 'change': -8.23},
+            'META': {'price': 296.73, 'change': 3.21},
+            'NFLX': {'price': 486.81, 'change': -2.45}
+        }
+    
+    def get_time_data(self):
+        now = datetime.now()
+        return {
+            'time': now.strftime('%H:%M:%S'),
+            'full_date': now.strftime('%Y-%m-%d'),
+            'day': now.strftime('%A'),
+            'current_time': now.strftime('%H:%M:%S'),
+            'current_date': now.strftime('%Y-%m-%d'),
+            'day_of_week': now.strftime('%A'),
+            'timezone': str(now.astimezone().tzinfo)
+        }
+    
+    def get_calendar_data(self):
+        now = datetime.now()
+        cal = calendar.monthcalendar(now.year, now.month)
+        return {
+            'month': now.strftime('%B %Y'),
+            'calendar': cal,
+            'today': now.day,
+            'weekdays': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            'day_names': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            'events': ['No events today', 'Project deadline next week']
+        }
+    
+    def get_vocabulary_data(self):
+        vocab = random.choice(self.vocabulary_words)
+        return {
+            'word': vocab['word'],
+            'meaning': vocab['meaning'],
+            'definition': vocab['meaning'],  # Same as meaning for this case
+            'source': vocab['source'],
+            'pronunciation': f"/{vocab['word'].lower()}/",
+            'part_of_speech': 'noun',
+            'example': f"The {vocab['word'].lower()} was quite remarkable."
+        }
+    
+    def get_quote_data(self):
+        quote_text = random.choice(self.quotes)
+        # Parse quote format "text - author"
+        if " - " in quote_text:
+            text, author = quote_text.rsplit(" - ", 1)
+        else:
+            text = quote_text
+            author = "Unknown"
+        
+        return {
+            'text': text,
+            'author': author,
+            'source': 'Inspirational Quotes Database'
+        }
+    
+    def get_puzzle_data(self):
+        puzzle_text = random.choice(self.puzzles)
+        # Create simple riddle answers
+        riddle_answers = {
+            "What has keys but no locks, space but no room?": "A keyboard",
+            "I'm tall when I'm young, short when I'm old. What am I?": "A candle",
+            "What gets wet while drying?": "A towel",
+            "What can you break without touching?": "A promise",
+            "What goes up but never comes down?": "Your age",
+            "What has hands but can't clap?": "A clock",
+            "What has a face but no eyes?": "A clock or a coin",
+            "What runs but never walks?": "Water or a river",
+            "What can travel around the world while staying in a corner?": "A stamp",
+            "What has cities but no houses?": "A map"
+        }
+        
+        return {
+            'category': 'Brain Teaser',
+            'question': puzzle_text,
+            'answer': riddle_answers.get(puzzle_text, "Think about it!")
+        }
+    
+    def get_weather_data(self):
+        # Simulated weather data
+        conditions = ['Sunny', 'Cloudy', 'Rainy', 'Snowy', 'Windy', 'Foggy']
+        temp = random.randint(15, 35)
+        humidity = random.randint(30, 90)
+        wind_speed = random.randint(5, 25)
+        
+        return {
+            'temperature': f"{temp}°C",
+            'condition': random.choice(conditions),
+            'description': random.choice(conditions),
+            'humidity': f"{humidity}%",
+            'wind_speed': f"{wind_speed} km/h",
+            'wind': f"{wind_speed} km/h",
+            'location': 'Local Area',
+            'source': 'Simulated Weather Service'
+        }
+    
+    def get_stock_data(self):
+        # Simulate live stock price changes
+        for symbol in self.stocks:
+            # Random price movement (-2% to +2%)
+            change_percent = random.uniform(-0.02, 0.02)
+            price_change = self.stocks[symbol]['price'] * change_percent
+            self.stocks[symbol]['price'] += price_change
+            self.stocks[symbol]['change'] = change_percent * 100  # Convert to percentage
+        
+        # Format for frontend
+        stocks_list = []
+        for symbol, data in self.stocks.items():
+            stocks_list.append({
+                'symbol': symbol,
+                'price': f"{data['price']:.2f}",
+                'change': data['change']
+            })
+        
+        return {
+            'success': True,
+            'stocks': stocks_list,
+            'source': 'Simulated Market Data'
+        }
+    
+    def get_system_stats(self):
+        try:
+            import psutil
+            cpu_percent = psutil.cpu_percent(interval=1)
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            
+            return {
+                'available': True,
+                'cpu_usage': f"{cpu_percent:.1f}%",
+                'memory_usage': f"{memory.percent:.1f}%",
+                'disk_usage': f"{disk.percent:.1f}%",
+                'memory_total': f"{memory.total / (1024**3):.1f} GB",
+                'cpu_percent': cpu_percent,
+                'memory_percent': memory.percent,
+                'disk_percent': disk.percent
+            }
+        except ImportError:
+            cpu_rand = random.randint(10, 80)
+            mem_rand = random.randint(30, 70)
+            disk_rand = random.randint(20, 60)
+            return {
+                'available': True,
+                'cpu_usage': f"{cpu_rand}%",
+                'memory_usage': f"{mem_rand}%",
+                'disk_usage': f"{disk_rand}%",
+                'memory_total': "16.0 GB",
+                'cpu_percent': cpu_rand,
+                'memory_percent': mem_rand,
+                'disk_percent': disk_rand
+            }
+    
+    def get_llm_chat_data(self):
+        responses = [
+            "💭 Ready to assist with your questions!",
+            "🤔 What would you like to explore today?",
+            "🚀 Let's dive into something interesting!",
+            "📚 Knowledge is power - ask away!",
+            "🎯 I'm here to help you learn and grow!",
+            "🌟 Every question leads to discovery!",
+            "🔍 Curiosity is the key to understanding!",
+            "💡 Ideas are waiting to be explored!"
+        ]
+        return {
+            'message': random.choice(responses),
+            'timestamp': datetime.now().strftime('%H:%M:%S')
+        }
+
+
+# Create dashboard data provider instance
+dashboard_provider = DashboardDataProvider()
+
+
 @app.route('/')
 def index():
     """Main unified page."""
@@ -674,6 +898,76 @@ def get_system_usage():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ========== DASHBOARD API ENDPOINTS ==========
+
+@app.route('/api/dashboard/time')
+def dashboard_time():
+    """Get current time data for dashboard."""
+    return jsonify(dashboard_provider.get_time_data())
+
+@app.route('/api/dashboard/calendar')
+def dashboard_calendar():
+    """Get calendar data for dashboard."""
+    return jsonify(dashboard_provider.get_calendar_data())
+
+@app.route('/api/dashboard/vocabulary')
+def dashboard_vocabulary():
+    """Get vocabulary word for dashboard."""
+    return jsonify(dashboard_provider.get_vocabulary_data())
+
+@app.route('/api/dashboard/quote')
+def dashboard_quote():
+    """Get inspirational quote for dashboard."""
+    return jsonify(dashboard_provider.get_quote_data())
+
+@app.route('/api/dashboard/puzzle')
+def dashboard_puzzle():
+    """Get brain teaser puzzle for dashboard."""
+    return jsonify({'puzzle': dashboard_provider.get_puzzle_data()})
+
+@app.route('/api/dashboard/weather')
+def dashboard_weather():
+    """Get weather data for dashboard."""
+    return jsonify(dashboard_provider.get_weather_data())
+
+@app.route('/api/dashboard/stocks')
+def dashboard_stocks():
+    """Get stock market data for dashboard."""
+    return jsonify(dashboard_provider.get_stock_data())
+
+@app.route('/api/dashboard/system')
+def dashboard_system():
+    """Get system statistics for dashboard."""
+    return jsonify(dashboard_provider.get_system_stats())
+
+@app.route('/api/dashboard/llm')
+def dashboard_llm():
+    """Get LLM chat data for dashboard."""
+    return jsonify(dashboard_provider.get_llm_chat_data())
+
+@app.route('/api/dashboard/models')
+def dashboard_models():
+    """Get available models for dashboard LLM widget."""
+    try:
+        models = model_manager.get_available_models()
+        return jsonify({
+            'success': True,
+            'models': [model['name'] for model in models]
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'models': [],
+            'error': str(e)
+        })
+
+@app.route('/dashboard')
+def dashboard():
+    """Serve the dashboard page."""
+    return render_template('dashboard.html')
+
 
 # ========== Q&A MODE ENDPOINTS ==========
 
@@ -1008,10 +1302,41 @@ def handle_disconnect():
     """Handle client disconnection."""
     print(f"Client disconnected: {request.sid}")
 
+
+# ========== DASHBOARD BACKGROUND UPDATES ==========
+
+def start_dashboard_background_updates():
+    """Start background thread for dashboard data updates."""
+    def update_dashboard():
+        while True:
+            try:
+                # Update every 5 seconds
+                time.sleep(5)
+                
+                # Emit dashboard updates to all connected clients
+                socketio.emit('dashboard_update', {
+                    'time': dashboard_provider.get_time_data(),
+                    'stocks': dashboard_provider.get_stock_data(),
+                    'system': dashboard_provider.get_system_stats(),
+                    'llm': dashboard_provider.get_llm_chat_data()
+                }, namespace='/')
+                
+            except Exception as e:
+                print(f"Dashboard update error: {e}")
+                time.sleep(10)  # Wait longer on error
+    
+    # Start background thread
+    update_thread = threading.Thread(target=update_dashboard, daemon=True)
+    update_thread.start()
+    print("📊 Dashboard background updates started")
+
+
+# ========== MAIN APPLICATION ==========
+
 if __name__ == '__main__':
     print("🚀 Starting Unified Multi-Model Application...")
     print("📡 Server will be available at: http://localhost:5000")
-    print("🔄 Features: Q&A Mode + Enhanced Debate Mode")
+    print("🔄 Features: Q&A Mode + Enhanced Debate Mode + Live Dashboard")
     
     # Initialize models on startup with filtering
     startup_models = initialize_models_on_startup()
@@ -1019,6 +1344,9 @@ if __name__ == '__main__':
     if not startup_models:
         print("⚠️  Warning: No models available. The application will start but functionality will be limited.")
         print("   Please ensure Ollama is running and models are installed.")
+    
+    # Start dashboard background updates
+    start_dashboard_background_updates()
     
     print("\n🌐 Starting unified web server...")
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

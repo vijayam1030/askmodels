@@ -1487,7 +1487,7 @@
                     <div class="dashboard-iframe-container">
                         <iframe 
                             id="dashboardFrame" 
-                            src="http://localhost:5001" 
+                            src="/dashboard" 
                             frameborder="0" 
                             width="100%" 
                             height="800px"
@@ -2845,7 +2845,7 @@
         }
 
         function refreshDashboard() {
-            const iframe = document.getElementById('dashboard-iframe');
+            const iframe = document.getElementById('dashboardFrame');
             if (iframe) {
                 const currentSrc = iframe.src;
                 iframe.src = 'about:blank';
@@ -2856,15 +2856,27 @@
             }
         }
 
+        function openDashboardNewTab() {
+            window.open('/dashboard', '_blank');
+        }
+
         // Initialize dashboard iframe when window loads
         window.addEventListener('load', function() {
-            const iframe = document.getElementById('dashboard-iframe');
+            const iframe = document.getElementById('dashboardFrame');
             if (iframe) {
                 iframe.onload = function() {
                     console.log('Dashboard iframe loaded successfully');
+                    const statusEl = document.getElementById('dashboardStatus');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span class="status-indicator status-connected"></span>Dashboard active';
+                    }
                 };
                 iframe.onerror = function() {
                     console.error('Dashboard iframe failed to load');
+                    const statusEl = document.getElementById('dashboardStatus');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span class="status-indicator status-error"></span>Dashboard error';
+                    }
                 };
             }
         });
