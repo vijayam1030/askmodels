@@ -1333,7 +1333,7 @@
                         </div>
                         <div class="selection-summary">
                             <span id="selectionCount">0 models selected</span>
-                            <span class="selection-note">Select 1-8 models for your query</span>
+                            <span class="selection-note">Select as many models as you want for your query</span>
                         </div>
                     </div>
 
@@ -2425,10 +2425,7 @@
                 return;
             }
 
-            if (selectedModels.length > 8) {
-                alert('Please select no more than 8 models to avoid system overload');
-                return;
-            }
+            // No limit for Q&A mode - user can select as many as they want
 
             const questionType = document.querySelector('input[name="type"]:checked').value;
             const useStreaming = streamingCheckbox.checked;
@@ -2464,8 +2461,8 @@
                 return;
             }
 
-            if (selectedModels.length > 8) {
-                alert('Please select no more than 8 models to avoid system overload');
+            if (selectedModels.length > 6) {
+                alert('Please select no more than 6 models for optimal debate quality');
                 return;
             }
 

@@ -35,7 +35,7 @@ available_models = []
 
 # Debate configuration
 DEBATE_ROUNDS = 3
-MAX_DEBATE_MODELS = 4
+MAX_DEBATE_MODELS = 6
 
 def filter_large_models(models):
     """Filter out ultra-large models (70B+ parameters) that may be too resource intensive."""
@@ -1119,7 +1119,7 @@ def handle_start_debate(data):
         return
     
     if len(selected_models) > MAX_DEBATE_MODELS:
-        emit('error', {'message': f'Please select no more than {MAX_DEBATE_MODELS} models'})
+        emit('error', {'message': f'Please select no more than {MAX_DEBATE_MODELS} models for optimal debate quality'})
         return
     
     # Validate rounds range
