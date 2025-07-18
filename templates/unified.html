@@ -825,6 +825,160 @@
             font-family: 'Georgia', serif;
         }
 
+        /* Enhanced Debate Summary Styles */
+        .summary-content.enhanced {
+            white-space: normal;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .debate-summary-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .debate-summary-header h3 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .debate-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .voting-summary-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #007bff;
+        }
+
+        .voting-summary-section h3 {
+            margin-top: 0;
+            color: #007bff;
+            font-size: 20px;
+        }
+
+        .vote-results {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .vote-result {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .vote-position {
+            font-weight: bold;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .vote-models {
+            color: #6c757d;
+            font-size: 14px;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .vote-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .vote-count {
+            font-weight: bold;
+            color: #007bff;
+            font-size: 16px;
+        }
+
+        .vote-percentage {
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .winner-section {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .winner-section h4 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        .winner-analysis {
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .final-verdict-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .final-verdict-section h3 {
+            margin-top: 0;
+            color: #856404;
+            font-size: 20px;
+        }
+
+        .verdict-content {
+            color: #856404;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .summary-point {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f3f4;
+            color: #495057;
+        }
+
+        .summary-point:last-child {
+            border-bottom: none;
+        }
+
+        .summary-content.enhanced h4 {
+            color: #495057;
+            margin: 25px 0 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 8px;
+        }
+
         /* Consensus Analysis Styles */
         .debate-final-analysis {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -2024,10 +2178,24 @@
                 markDebateTabCompleted('summary');
                 markDebateTabCompleted('consensus');
                 
-                // Update summary content
+                // Update summary content with enhanced formatting
                 if (data.summary.success) {
+                    // Parse and enhance the summary content
+                    const summaryContent = data.summary.content;
+                    const enhancedSummary = formatDebateSummary(summaryContent, data.topic, data.participants);
+                    
                     document.getElementById('summaryContent').innerHTML = `
-                        <div class="summary-content">${data.summary.content}</div>
+                        <div class="debate-summary-header">
+                            <h3>🏆 Debate Results: ${data.topic}</h3>
+                            <div class="debate-meta">
+                                <span>🤖 ${data.participants.length} participants</span>
+                                <span>🔄 ${data.total_rounds} rounds</span>
+                                <span>📝 AI Analysis by ${data.summary.model}</span>
+                                ${data.debate_duration ? `<span>⏱️ ${Math.round(data.debate_duration)}s duration</span>` : ''}
+                                ${data.debate_id ? `<span>🆔 ${data.debate_id}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="summary-content enhanced">${enhancedSummary}</div>
                     `;
                 } else {
                     document.getElementById('summaryContent').innerHTML = '<div class="error-message">Error generating enhanced final analysis</div>';
@@ -3341,7 +3509,7 @@
 
         // Dashboard utility functions
         function checkDashboardStatus() {
-            const iframe = document.getElementById('dashboard-iframe');
+            const iframe = document.getElementById('dashboardFrame');
             if (iframe) {
                 try {
                     // Check if iframe is loaded
@@ -3354,6 +3522,55 @@
                 return 'loading';
             }
             return 'not-found';
+        }
+
+        // Enhanced debate summary formatting
+        function formatDebateSummary(summaryContent, topic, participants) {
+            // Enhanced formatting for debate summary with voting and winner analysis
+            let formatted = summaryContent;
+            
+            // Format voting summary section with enhanced styling
+            formatted = formatted.replace(
+                /\*\*VOTING SUMMARY\*\*:(.*?)(?=\*\*|$)/gs,
+                (match, content) => {
+                    const votingHtml = content
+                        .replace(/- (.*?): \[(.*?)\] \((\d+) votes?, (\d+\.?\d*)%\)/g, 
+                            '<div class="vote-result"><div class="vote-position">$1</div><div class="vote-models">$2</div><div class="vote-stats"><span class="vote-count">$3 votes</span><span class="vote-percentage">$4%</span></div></div>')
+                        .replace(/\*\*WINNER DETERMINATION\*\*:(.*?)(?=\d\.|$)/gs, 
+                            '<div class="winner-section"><h4>🏆 Winner Determination</h4><div class="winner-analysis">$1</div></div>');
+                    
+                    return `<div class="voting-summary-section">
+                        <h3>🗳️ Voting Summary</h3>
+                        <div class="vote-results">
+                            ${votingHtml}
+                        </div>
+                    </div>`;
+                }
+            );
+            
+            // Format final verdict section
+            formatted = formatted.replace(
+                /\*\*FINAL VERDICT\*\*:(.*?)(?=\*\*|$)/gs,
+                '<div class="final-verdict-section"><h3>⚖️ Final Verdict</h3><div class="verdict-content">$1</div></div>'
+            );
+            
+            // Format other sections with consistent styling
+            formatted = formatted.replace(
+                /\*\*([^*]+)\*\*:/g,
+                '<h4>$1</h4>'
+            );
+            
+            // Format lists and make them more readable
+            formatted = formatted.replace(
+                /^- (.+)$/gm,
+                '<div class="summary-point">• $1</div>'
+            );
+            
+            // Add line breaks for better readability
+            formatted = formatted.replace(/\n\n/g, '<br><br>');
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            return formatted;
         }
 
         function refreshDashboard() {

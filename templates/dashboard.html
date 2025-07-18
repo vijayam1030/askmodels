@@ -770,7 +770,10 @@
             fetch('/api/dashboard/calendar').then(r => r.json()).then(updateCalendar);
             fetch('/api/dashboard/quote').then(r => r.json()).then(updateQuote);
             fetch('/api/dashboard/vocabulary').then(r => r.json()).then(updateVocabulary);
-            fetch('/api/dashboard/puzzle').then(r => r.json()).then(updatePuzzle);
+            fetch('/api/dashboard/puzzle').then(r => r.json()).then(updatePuzzle).catch(error => {
+                console.error('Error fetching puzzle:', error);
+                document.getElementById('puzzleQuestion').textContent = 'Error loading puzzle';
+            });
             fetch('/api/dashboard/weather').then(r => r.json()).then(updateWeather);
             fetch('/api/dashboard/stocks').then(r => r.json()).then(updateStocks);
             fetch('/api/dashboard/system').then(r => r.json()).then(updateSystemStats);
@@ -842,9 +845,12 @@
         }
 
         function updatePuzzle(data) {
-            document.getElementById('puzzleCategory').textContent = data.category;
-            document.getElementById('puzzleQuestion').textContent = data.question;
-            document.getElementById('puzzleAnswer').textContent = data.answer;
+            // Handle the API response structure where puzzle data is nested
+            const puzzleData = data.puzzle || data;
+            console.log('Puzzle data received:', puzzleData);
+            document.getElementById('puzzleCategory').textContent = puzzleData.category;
+            document.getElementById('puzzleQuestion').textContent = puzzleData.question;
+            document.getElementById('puzzleAnswer').textContent = puzzleData.answer;
             document.getElementById('puzzleAnswer').classList.add('puzzle-answer-hidden');
             document.querySelector('.show-answer-btn').textContent = 'Show Answer';
         }

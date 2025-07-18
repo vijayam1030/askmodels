@@ -5,39 +5,18 @@ import time
 import threading
 import uuid
 from typing import Dict, List, Optional, Tuple
-import asyncio
-import websocket
-import queue
 
-class GradioApp:
+class FixedGradioApp:
     def __init__(self):
         self.base_url = "http://localhost:5000"
         self.session_id = str(uuid.uuid4())
         self.models = []
-        self.responses = {}
-        self.debate_state = {}
-        self.is_querying = False
-        self.is_debating = False
-        self.response_queue = queue.Queue()
-        self.debate_queue = queue.Queue()
-        
-        # Model categories
-        self.categories = {
-            '💻 Coding': '💻 Coding & Development',
-            '✍️ Creative': '✍️ Creative & Writing',
-            '🔬 Research': '🔬 Research & Analysis',
-            '💬 Conversational': '💬 Conversational AI',
-            '⚡ Efficient': '⚡ Efficient & Lightweight',
-            '🤖 General': '🤖 General Purpose'
-        }
-        
-        # Load models on startup
         self.load_models()
     
     def load_models(self):
         """Load available models from the API"""
         try:
-            response = requests.get(f"{self.base_url}/api/models", timeout=10)
+            response = requests.get(f"{self.base_url}/api/models", timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 if data['success']:
@@ -63,15 +42,11 @@ class GradioApp:
     
     def get_model_choices(self):
         """Get model choices for checkboxes"""
-        if not self.models:
-            self.load_models()
-        
         choices = []
         for model in self.models:
             specialty = model.get('specialty', 'General Purpose')
             category = model.get('category', 'General')
             choices.append(f"{model['name']} ({category} - {specialty})")
-        
         return choices
     
     def extract_model_names(self, selected_choices):
@@ -98,7 +73,7 @@ class GradioApp:
             payload = {
                 'question': question,
                 'type': question_type,
-                'streaming': False,  # For Gradio, we'll use non-streaming
+                'streaming': False,
                 'selected_models': model_names,
                 'session_id': self.session_id
             }
@@ -122,7 +97,7 @@ class GradioApp:
                     result += "## 📝 Sample Responses:\n\n"
                     for i, model in enumerate(model_names, 1):
                         result += f"### 🤖 {model}\n\n"
-                        result += "**Status:** ✅ Completed\n\n"
+                        result += f"**Status:** ✅ Completed\n\n"
                         result += f"**Response:** This is a sample response from {model} to the question: '{question}'\n\n"
                         result += "---\n\n"
                     
@@ -238,30 +213,27 @@ class GradioApp:
         
         # Fallback system info
         return f"""
-# � System Dashboard
+# 📊 System Dashboard
 
 ## 🖥️ System Resources
-- **Status:** ✅ Working (Demo Mode)
+- **Status:** ⚠️ Limited connectivity
 - **Models Available:** {len(self.models)}
 - **Backend URL:** {self.base_url}
 
 ## 🤖 Model Status
 - **Total Models:** {len(self.models)}
-- **Connection:** ✅ Active
+- **Connection:** ⚠️ Demo mode
 - **Session ID:** {self.session_id[:8]}...
 
-## � Recent Activity
-- **Status:** Ready for queries and debates
+## 📋 Recent Activity
+- **Status:** Demo mode active
 - **Framework:** Gradio {gr.__version__}
-- **Backend:** Flask API
+- **Backend:** Flask API (may be offline)
 
 ## 📈 Performance
-- **Response Time:** Fast
-- **Availability:** 100%
+- **Response Time:** Demo mode
+- **Availability:** Demo mode
 - **Framework Status:** ✅ Operational
-
-## 🎉 Status
-**The Gradio app is now working correctly!**
 """
     
     def create_interface(self):
@@ -282,37 +254,15 @@ class GradioApp:
             border-radius: 10px;
             margin-bottom: 2rem;
         }
-        
-        .model-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-        
-        .response-card {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 0.5rem 0;
-        }
-        
-        .tab-nav {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
         """
         
-        with gr.Blocks(css=css, title="🤖 Multi-Model AI Assistant") as interface:
+        with gr.Blocks(css=css, title="🤖 Multi-Model AI Assistant - Gradio") as interface:
             
             # Header
             gr.HTML("""
             <div class="header">
                 <h1>🤖 Multi-Model AI Assistant</h1>
-                <p>Gradio Implementation - Query multiple AI models or watch them debate</p>
+                <p>Gradio Implementation - Query multiple AI models or start debates</p>
             </div>
             """)
             
@@ -369,16 +319,12 @@ class GradioApp:
                         self.load_models()
                         return gr.CheckboxGroup.update(choices=self.get_model_choices())
                     
-                    def handle_qa_query(question, q_type, selected_choices):
-                        selected_models = self.extract_model_names(selected_choices)
-                        return self.query_models(question, q_type, selected_models)
-                    
                     select_all_qa.click(select_all_models_qa, outputs=model_choices)
                     clear_all_qa.click(clear_all_models_qa, outputs=model_choices)
                     refresh_models_qa.click(refresh_models_qa, outputs=model_choices)
                     
                     submit_qa.click(
-                        handle_qa_query,
+                        self.query_models,
                         inputs=[question_input, question_type, model_choices],
                         outputs=qa_output
                     )
@@ -435,16 +381,12 @@ class GradioApp:
                         self.load_models()
                         return gr.CheckboxGroup.update(choices=self.get_model_choices())
                     
-                    def handle_debate_start(topic, selected_choices, rounds):
-                        selected_models = self.extract_model_names(selected_choices)
-                        return self.start_debate(topic, selected_models, int(rounds))
-                    
                     select_all_debate.click(select_all_models_debate, outputs=debate_model_choices)
                     clear_all_debate.click(clear_all_models_debate, outputs=debate_model_choices)
                     refresh_models_debate.click(refresh_models_debate, outputs=debate_model_choices)
                     
                     submit_debate.click(
-                        handle_debate_start,
+                        self.start_debate,
                         inputs=[debate_topic, debate_model_choices, debate_rounds],
                         outputs=debate_output
                     )
@@ -468,7 +410,7 @@ class GradioApp:
             <div style="text-align: center; margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
                 <p><strong>Session ID:</strong> {self.session_id[:8]}... | 
                 <strong>Models Available:</strong> {len(self.models)} | 
-                <strong>Framework:</strong> Gradio</p>
+                <strong>Framework:</strong> Gradio {gr.__version__}</p>
             </div>
             """)
         
@@ -481,7 +423,8 @@ class GradioApp:
 
 # Create and launch the app
 if __name__ == "__main__":
-    app = GradioApp()
+    print("🚀 Starting Fixed Gradio App...")
+    app = FixedGradioApp()
     app.launch(
         server_name="0.0.0.0",
         server_port=7860,

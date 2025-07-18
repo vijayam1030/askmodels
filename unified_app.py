@@ -202,6 +202,43 @@ class EnhancedDebateManager:
         self.original_topic = ""
         self.model_positions = {}  # Track each model's stance
         self.debate_rounds = debate_rounds
+        self.current_debate_id = None
+        self.current_participants = []
+        self.debate_start_time = None
+        self.debate_end_time = None
+    
+    def start_new_debate(self, topic, participants):
+        """Start a new debate and clear previous state"""
+        import time
+        self.debate_history = []
+        self.current_debate_id = f"debate_{int(time.time())}"
+        self.original_topic = topic
+        self.current_participants = participants
+        self.debate_start_time = time.time()
+        self.debate_end_time = None
+        self.current_round = 0
+        self.model_positions = {}
+        print(f"[DEBUG] Started new debate: {self.current_debate_id}, topic: {topic}")
+    
+    def end_debate(self):
+        """Mark the current debate as completed"""
+        import time
+        self.debate_end_time = time.time()
+        print(f"[DEBUG] Ended debate: {self.current_debate_id}")
+    
+    def add_argument(self, model, round_num, content):
+        """Add a new argument to the current debate"""
+        import time
+        argument = {
+            'model': model,
+            'round': round_num,
+            'content': content,
+            'timestamp': time.time(),
+            'debate_id': self.current_debate_id
+        }
+        self.debate_history.append(argument)
+        print(f"[DEBUG] Added argument for {model} in round {round_num}")
+        return argument
         
     def select_debate_models(self, available_models, count=None):
         """Select models for the debate."""
@@ -441,21 +478,42 @@ Your final argument (2-3 paragraphs):"""
 
 Provide a detailed analysis with these sections:
 
-1. **VOTING SUMMARY**: Based on each participant's final stance, determine which side of the debate topic they support. For a topic like "Is family or friends more important?", categorize each model as supporting either "Family" or "Friends" based on their arguments. Present this as:
-   - Family supporters: [list models] (X votes, Y%)
-   - Friends supporters: [list models] (X votes, Y%)
+1. **VOTING SUMMARY**: Based on each participant's final stance, determine which side of the debate topic they support. Analyze the debate topic to identify the main positions (e.g., for "Is family or friends more important?", the positions would be "Family" vs "Friends"). Categorize each model based on their strongest arguments and final position:
+   - Position A supporters: [list models] (X votes, Y%)
+   - Position B supporters: [list models] (X votes, Y%)
    - Neutral/Balanced: [list models] (X votes, Y%)
+   
+   **WINNER DETERMINATION**: Declare the winning position based on:
+   - Number of votes (participant support)
+   - Strength and quality of arguments presented
+   - Evidence and reasoning provided
+   - Overall persuasiveness
 
-2. **PARTICIPANT POSITIONS**: Summarize each model's core stance with their reasoning
-3. **ARGUMENT EVOLUTION**: How positions developed across rounds  
-4. **KEY INTERACTIONS**: Highlight where models directly engaged with each other
-5. **STRONGEST POINTS**: Most compelling arguments from each side
-6. **AREAS OF AGREEMENT**: Common ground found during debate
-7. **UNRESOLVED TENSIONS**: Remaining disagreements
-8. **DEBATE QUALITY**: Assessment of reasoning and evidence quality
-9. **FINAL VERDICT**: Based on the quality of arguments presented, which position had stronger support and why
+2. **PARTICIPANT POSITIONS**: Summarize each model's core stance with their key reasoning
 
-Format with clear headers, start with the VOTING SUMMARY section, and maintain analytical objectivity.
+3. **ARGUMENT STRENGTH ANALYSIS**: 
+   - Strongest arguments for each position
+   - Most compelling evidence presented
+   - Logical reasoning quality assessment
+
+4. **DEBATE DYNAMICS**: 
+   - How positions evolved across rounds
+   - Key interactions and responses between participants
+   - Momentum shifts during the debate
+
+5. **AREAS OF CONSENSUS**: Points where participants found common ground
+
+6. **CRITICAL DISAGREEMENTS**: Major unresolved tensions and conflicting viewpoints
+
+7. **DEBATE QUALITY ASSESSMENT**: Overall quality of reasoning, evidence, and argumentation
+
+8. **FINAL VERDICT**: 
+   - Winning position and percentage of support
+   - Why this position prevailed
+   - Margin of victory (decisive, narrow, etc.)
+   - Key factors that determined the outcome
+
+Format with clear headers, start with the VOTING SUMMARY section, and provide a definitive winner analysis. Be objective but decisive in determining the outcome.
 
 COMPREHENSIVE ANALYSIS:"""
 
@@ -1042,6 +1100,11 @@ def dashboard():
     """Serve the dashboard page."""
     return render_template('dashboard.html')
 
+@app.route('/dashboard-test')
+def dashboard_test():
+    """Serve the dashboard test page."""
+    return render_template('dashboard_test.html')
+
 
 # ========== Q&A MODE ENDPOINTS ==========
 
@@ -1228,6 +1291,66 @@ def process_enhanced_debate_async(topic: str, selected_models: list, debate_roun
             'session_id': session_id
         })
 
+def create_manual_summary(topic, debate_history, selected_models):
+    """Create a manual summary when AI models fail"""
+    from types import SimpleNamespace
+    
+    # Count interactions and analyze participation
+    model_participation = {}
+    total_interactions = 0
+    
+    for interaction in debate_history:
+        model_name = interaction['model']
+        if model_name not in model_participation:
+            model_participation[model_name] = {
+                'count': 0,
+                'total_length': 0,
+                'arguments': []
+            }
+        
+        model_participation[model_name]['count'] += 1
+        model_participation[model_name]['total_length'] += len(interaction['response'])
+        model_participation[model_name]['arguments'].append(interaction['response'][:100] + "...")
+        total_interactions += 1
+    
+    # Create summary text
+    summary_text = f"""
+# Enhanced Debate Summary: {topic}
+
+## Debate Overview
+- **Total Interactions:** {total_interactions}
+- **Participating Models:** {', '.join(selected_models)}
+- **Debate Duration:** {len(debate_history)} rounds
+
+## Model Participation Analysis
+"""
+    
+    for model, stats in model_participation.items():
+        avg_length = stats['total_length'] / stats['count'] if stats['count'] > 0 else 0
+        summary_text += f"""
+### {model}
+- **Contributions:** {stats['count']} responses
+- **Average Response Length:** {avg_length:.0f} characters
+- **Engagement Level:** {'High' if stats['count'] > total_interactions/len(selected_models) else 'Moderate'}
+"""
+    
+    summary_text += """
+## Debate Conclusion
+The debate covered multiple perspectives on the topic. Each model contributed unique viewpoints and analysis.
+
+## Voting Analysis
+Based on the debate interactions, all models provided valuable insights. The discussion covered various aspects of the topic with thorough analysis from different perspectives.
+
+**Note:** This summary was generated using fallback analysis due to model availability issues.
+"""
+    
+    # Create a response-like object
+    response = SimpleNamespace()
+    response.is_successful = lambda: True
+    response.get_response = lambda: summary_text
+    
+    return response
+
 async def process_enhanced_debate(topic: str, selected_models: list, debate_rounds: int, session_id: str):
     """Process the enhanced debate with better inter-model interaction."""
     try:
@@ -1250,9 +1373,9 @@ async def process_enhanced_debate(topic: str, selected_models: list, debate_roun
             })
             return
         
-        # Initialize enhanced debate manager
+        # Initialize enhanced debate manager with NEW debate state
         debate_manager = EnhancedDebateManager(session_id, debate_rounds)
-        debate_manager.original_topic = topic
+        debate_manager.start_new_debate(topic, debate_models)  # Clear previous state
         
         # Use selected debate models directly
         selected_models = debate_models
@@ -1328,34 +1451,89 @@ async def process_enhanced_debate(topic: str, selected_models: list, debate_roun
             if round_num < debate_rounds:
                 await asyncio.sleep(3)
         
+        # Mark debate as completed
+        debate_manager.end_debate()
+        
         # Generate enhanced final summary
         socketio.emit('debate_summary_started', {
             'session_id': session_id
         })
         
-        # Use best model for summary
-        summary_model = selected_models[0]
+        # Use best available model for summary with fallback
+        summary_model = selected_models[0] if selected_models else "gpt-4"
         summary_prompt = debate_manager.create_summary_prompt(topic, debate_manager.debate_history)
         
-        summary_response = await model_manager.query_model(summary_model, summary_prompt, stream=False)
+        try:
+            # Try to generate summary with primary model
+            print(f"[DEBUG] Attempting summary generation with model: {summary_model}")
+            summary_response = await model_manager.query_model(summary_model, summary_prompt, stream=False)
+            print(f"[DEBUG] Summary response success: {summary_response.is_successful()}")
+            
+            if not summary_response.is_successful():
+                # Fallback: try with a different model if available
+                if len(selected_models) > 1:
+                    fallback_model = selected_models[1]
+                    print(f"[DEBUG] Primary model {summary_model} failed, trying fallback {fallback_model}")
+                    summary_response = await model_manager.query_model(fallback_model, summary_prompt, stream=False)
+                    if summary_response.is_successful():
+                        summary_model = fallback_model
+                        print(f"[DEBUG] Fallback model {fallback_model} succeeded")
+                
+                # If still failing, create a manual summary
+                if not summary_response.is_successful():
+                    print("[DEBUG] Both models failed, creating manual summary")
+                    summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
+                    
+        except Exception as e:
+            print(f"[ERROR] Exception during summary generation: {e}")
+            # Create manual summary as final fallback
+            summary_response = create_manual_summary(topic, debate_manager.debate_history, selected_models)
         
         # Generate consensus analysis
         consensus_analysis = debate_manager.analyze_debate_consensus(topic, debate_manager.debate_history)
         
-        # Emit final results with enhanced analytics
-        socketio.emit('debate_completed', {
-            'topic': topic,
-            'participants': selected_models,
-            'total_rounds': DEBATE_ROUNDS,
-            'summary': {
-                'model': summary_model,
-                'content': summary_response.response if summary_response.is_successful() else "Error generating summary",
-                'success': summary_response.is_successful()
-            },
-            'consensus_analysis': consensus_analysis,
-            'debate_history': debate_manager.debate_history,
-            'session_id': session_id
-        })
+        # Emit final results with enhanced analytics including current debate info
+        try:
+            # Get summary content safely
+            if summary_response.is_successful():
+                summary_content = summary_response.get_response()
+            else:
+                summary_content = "Error generating enhanced summary with voting analysis"
+            
+            socketio.emit('debate_completed', {
+                'topic': topic,
+                'participants': selected_models,
+                'total_rounds': debate_rounds,  # Use actual rounds, not global constant
+                'debate_id': debate_manager.current_debate_id,  # Include unique debate ID
+                'summary': {
+                    'model': summary_model,
+                    'content': summary_content,
+                    'success': summary_response.is_successful()
+                },
+                'consensus_analysis': consensus_analysis,
+                'debate_history': debate_manager.debate_history,
+                'debate_duration': debate_manager.debate_end_time - debate_manager.debate_start_time if debate_manager.debate_end_time else 0,
+                'session_id': session_id
+            })
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to emit debate completion: {e}")
+            # Send minimal completion event
+            socketio.emit('debate_completed', {
+                'topic': topic,
+                'participants': selected_models,
+                'total_rounds': debate_rounds,
+                'debate_id': debate_manager.current_debate_id if hasattr(debate_manager, 'current_debate_id') else 'unknown',
+                'summary': {
+                    'model': summary_model,
+                    'content': "Summary generation encountered technical difficulties. Please try again.",
+                    'success': False
+                },
+                'consensus_analysis': "Unable to generate consensus analysis",
+                'debate_history': debate_manager.debate_history if hasattr(debate_manager, 'debate_history') else [],
+                'debate_duration': 0,
+                'session_id': session_id
+            })
         
     except Exception as e:
         socketio.emit('error', {
