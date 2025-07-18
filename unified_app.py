@@ -1092,7 +1092,7 @@ def dashboard_models():
         models = model_manager.get_available_models()
         return jsonify({
             'success': True,
-            'models': [model['name'] for model in models]
+            'models': models  # models is already a list of strings
         })
     except Exception as e:
         return jsonify({
@@ -1677,6 +1677,86 @@ def handle_cancel_query(data):
         print(f"❌ Error cancelling query: {e}")
         socketio.emit('error', {
             'message': f'Error cancelling query: {str(e)}',
+            'session_id': session_id
+        })
+
+@socketio.on('ask_llm')
+def handle_ask_llm(data):
+    """Handle single LLM query from dashboard."""
+    question = data.get('question', '').strip()
+    model = data.get('model', '').strip()
+    session_id = request.sid
+    
+    if not question:
+        emit('llm_error', {'message': 'Please provide a question'})
+        return
+    
+    if not model:
+        emit('llm_error', {'message': 'Please select a model'})
+        return
+    
+    # Check if model is available
+    available_models = model_manager.get_available_models()
+    if model not in available_models:
+        emit('llm_error', {'message': f'Model {model} is not available'})
+        return
+    
+    # Emit started event
+    emit('llm_started', {'model': model})
+    
+    # Process the query in background
+    thread = threading.Thread(
+        target=process_llm_query_async,
+        args=(question, model, session_id)
+    )
+    thread.daemon = True
+    thread.start()
+
+def process_llm_query_async(question: str, model: str, session_id: str):
+    """Process single LLM query asynchronously."""
+    try:
+        # Run in new event loop for thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        start_time = time.time()
+        
+        # Query the model with a reasonable timeout for Ask AI
+        model_response = loop.run_until_complete(
+            asyncio.wait_for(
+                model_manager.query_model(model, question),
+                timeout=120.0  # 120 second timeout for Ask AI to handle slower models
+            )
+        )
+        
+        end_time = time.time()
+        response_time = end_time - start_time
+        
+        # Check if query was successful
+        if model_response.error:
+            socketio.emit('llm_error', {
+                'message': f'Error querying {model}: {model_response.error}',
+                'session_id': session_id
+            })
+        else:
+            # Emit response with the actual response text
+            socketio.emit('llm_response', {
+                'model': model,
+                'response': model_response.response,
+                'response_time': response_time,
+                'session_id': session_id
+            })
+        
+        loop.close()
+        
+    except asyncio.TimeoutError:
+        socketio.emit('llm_error', {
+            'message': f'Query timeout for {model} - model took longer than 120 seconds to respond. This model may be very slow or having issues.',
+            'session_id': session_id
+        })
+    except Exception as e:
+        socketio.emit('llm_error', {
+            'message': f'Error querying {model}: {str(e)}',
             'session_id': session_id
         })
 

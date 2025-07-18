@@ -710,6 +710,9 @@
             max-height: 500px;
             overflow-y: auto;
             transition: all 0.3s ease;
+            background: white;
+            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         .response-content.collapsed {
@@ -726,6 +729,119 @@
         .response-content.streaming {
             border-left: 3px solid #667eea;
             background: #f8f9ff;
+        }
+
+        /* Enhanced Content Formatting */
+        .response-content p {
+            margin: 0 0 12px 0;
+            line-height: 1.6;
+        }
+
+        .response-content strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .response-content em {
+            color: #34495e;
+            font-style: italic;
+        }
+
+        .response-content h1,
+        .response-content h2,
+        .response-content h3 {
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }
+
+        .response-content h1:first-child,
+        .response-content h2:first-child,
+        .response-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .response-content .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        .response-content .code-header {
+            background: #e9ecef;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .response-content .code-language {
+            color: #495057;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .response-content .copy-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.3s;
+        }
+
+        .response-content .copy-btn:hover {
+            background: #0056b3;
+        }
+
+        .response-content .code-block pre {
+            margin: 0;
+            padding: 12px;
+            background: #f8f9fa;
+            color: #495057;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response-content .code-block code {
+            background: transparent;
+            padding: 0;
+            border: none;
+            font-family: inherit;
+            color: inherit;
+        }
+
+        .response-content .inline-code {
+            background: #f8f9fa;
+            color: #e83e8c;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            border: 1px solid #e9ecef;
+        }
+
+        .response-content .numbered-list-item,
+        .response-content .bullet-list-item {
+            margin: 8px 0;
+            padding-left: 8px;
+            color: #333;
+        }
+
+        .response-content .response-divider {
+            border: none;
+            border-top: 1px solid #e9ecef;
+            margin: 20px 0;
         }
 
         /* Debate Specific Styles */
@@ -3262,7 +3378,11 @@
             } else if (status === 'completed') {
                 card.classList.remove('streaming');
                 contentDiv.classList.remove('streaming');
-                if (content) contentDiv.textContent = content;
+                if (content) {
+                    // Use enhanced formatting for completed responses
+                    const formattedContent = formatLLMResponse(content);
+                    contentDiv.innerHTML = formattedContent;
+                }
                 statusBadge.className = 'status-badge completed';
                 statusBadge.textContent = responseTime ? `Completed (${responseTime.toFixed(2)}s)` : 'Completed';
             } else if (status === 'error') {
@@ -3277,9 +3397,89 @@
         function appendToResponse(modelName, chunk) {
             const contentDiv = document.getElementById(`content-${modelName}`);
             if (contentDiv) {
-                contentDiv.textContent += chunk;
+                // For streaming, we accumulate plain text, then format when complete
+                if (!contentDiv.streamingContent) {
+                    contentDiv.streamingContent = '';
+                }
+                contentDiv.streamingContent += chunk;
+                
+                // Display raw streaming content during processing
+                contentDiv.textContent = contentDiv.streamingContent;
                 contentDiv.scrollTop = contentDiv.scrollHeight;
             }
+        }
+
+        // Enhanced formatting functions
+        function formatLLMResponse(response) {
+            // First, escape HTML to prevent XSS attacks
+            let escaped = escapeHtml(response);
+            
+            // Handle code blocks (```language or ```) - do this first before other formatting
+            let formatted = escaped
+                .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+                    const lang = language || 'text';
+                    return `<div class="code-block">
+                        <div class="code-header">
+                            <span class="code-language">${lang}</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)" data-code="${encodeURIComponent(code.trim())}">📋 Copy</button>
+                        </div>
+                        <pre><code class="language-${lang}">${code.trim()}</code></pre>
+                    </div>`;
+                })
+                // Handle inline code (`code`)
+                .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+                // Handle bold text (**text**)
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                // Handle italic text (*text*)
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                // Handle headers (# Header) - do this before line breaks
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                // Handle numbered lists (1. item)
+                .replace(/^\d+\.\s+(.+)$/gm, '<div class="numbered-list-item">$1</div>')
+                // Handle bullet points (- item or * item)
+                .replace(/^[-*]\s+(.+)$/gm, '<div class="bullet-list-item">• $1</div>')
+                // Handle horizontal rules (---)
+                .replace(/^---+$/gm, '<hr class="response-divider">')
+                // Handle line breaks - convert double newlines to paragraph breaks
+                .replace(/\n\n/g, '</p><p>')
+                // Convert single newlines to <br>
+                .replace(/\n/g, '<br>')
+                // Wrap the entire content in paragraphs
+                .replace(/^(.+)/, '<p>$1')
+                .replace(/(.+)$/, '$1</p>')
+                // Clean up empty paragraphs and fix structure
+                .replace(/<p><\/p>/g, '')
+                .replace(/<p>(<div|<h[1-6]|<hr)/g, '$1')
+                .replace(/(<\/div>|<\/h[1-6]>|<hr[^>]*>)<\/p>/g, '$1');
+            
+            return formatted;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyToClipboard(button) {
+            const code = decodeURIComponent(button.dataset.code);
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                button.textContent = '❌ Failed';
+                setTimeout(() => {
+                    button.textContent = '📋 Copy';
+                }, 2000);
+            });
         }
 
         function updateResponseStatus(modelName, status, responseTime) {
@@ -3289,7 +3489,17 @@
             if (statusBadge && card) {
                 card.classList.remove('streaming');
                 const contentDiv = document.getElementById(`content-${modelName}`);
-                if (contentDiv) contentDiv.classList.remove('streaming');
+                if (contentDiv) {
+                    contentDiv.classList.remove('streaming');
+                    
+                    // Format the accumulated streaming content
+                    if (contentDiv.streamingContent) {
+                        const formattedContent = formatLLMResponse(contentDiv.streamingContent);
+                        contentDiv.innerHTML = formattedContent;
+                        // Clear the streaming content
+                        delete contentDiv.streamingContent;
+                    }
+                }
                 
                 statusBadge.className = `status-badge ${status}`;
                 statusBadge.textContent = `Completed (${responseTime.toFixed(2)}s)`;
