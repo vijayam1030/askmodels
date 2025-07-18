@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .widget {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .widget-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        /* Time Widget */
+        .time-widget {
+            text-align: center;
+            background: linear-gradient(135deg, #ff7b7b 0%, #ff6b6b 100%);
+            color: white;
+        }
+
+        .time-display {
+            font-size: 3.5em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .date-display {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .day-display {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        /* Calendar Widget */
+        .calendar-widget {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+        }
+
+        .calendar-header {
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .calendar-day {
+            text-align: center;
+            padding: 8px 4px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .calendar-day.header {
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .calendar-day.today {
+            background: #ff6b6b;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .events-list {
+            font-size: 0.9em;
+        }
+
+        .events-list li {
+            margin: 5px 0;
+            padding: 3px 0;
+            border-left: 3px solid #ff6b6b;
+            padding-left: 8px;
+        }
+
+        /* Quote Widget */
+        .quote-widget {
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+            color: white;
+        }
+
+        .quote-text {
+            font-size: 1.2em;
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .quote-author {
+            text-align: right;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .quote-source {
+            text-align: right;
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Update Interval Styling */
+        .update-interval {
+            font-size: 0.6em;
+            font-weight: normal;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        /* Vocabulary Widget */
+        .vocab-widget {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+        }
+
+        .vocab-word {
+            font-size: 2.2em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .vocab-pronunciation {
+            text-align: center;
+            font-size: 1.1em;
+            font-style: italic;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .vocab-part-of-speech {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .vocab-definition {
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .vocab-example {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            font-style: italic;
+            margin-bottom: 8px;
+            border-left: 3px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .vocab-source {
+            text-align: right;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        /* Weather Source Styling */
+        .weather-source {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.8em;
+        }
+
+        /* LLM Response Hidden */
+        .llm-response-hidden {
+            display: none;
+        }
+
+        /* Puzzle Answer Hidden */
+        .puzzle-answer-hidden {
+            display: none;
+        }
+
+        /* Puzzle Widget */
+        .puzzle-widget {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+            color: white;
+        }
+
+        .puzzle-category {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            display: inline-block;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+
+        .puzzle-question {
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .puzzle-answer {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .show-answer-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .show-answer-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* LLM Widget */
+        .llm-widget {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .llm-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .model-select {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .question-input {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+
+        .ask-btn {
+            padding: 12px 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .ask-btn:hover {
+            background: #ff5252;
+        }
+
+        .ask-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .llm-response {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response-meta {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        /* Weather Widget */
+        .weather-widget {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            color: #2d3436;
+        }
+
+        .weather-main {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .weather-item {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        /* System Stats Widget */
+        .system-widget {
+            background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+            color: white;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .stat-bar {
+            width: 100px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: #74b9ff;
+            transition: width 0.3s ease;
+        }
+
+        .stat-fill.high {
+            background: #ff6b6b;
+        }
+
+        .stat-fill.medium {
+            background: #fdcb6e;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+                gap: 15px;
+            }
+
+            .llm-widget {
+                grid-column: span 1;
+            }
+
+            .time-display {
+                font-size: 2.5em;
+            }
+
+            .widget {
+                padding: 15px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #00b894;
+        }
+
+        .status-offline {
+            background: #e17055;
+        }
+
+        .status-loading {
+            background: #fdcb6e;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Time Widget -->
+        <div class="widget time-widget">
+            <div class="widget-title">🕐 Live Time <span class="update-interval">(updates every 1s)</span></div>
+            <div class="time-display" id="timeDisplay">--:--:--</div>
+            <div class="date-display" id="dateDisplay">---- -- --</div>
+            <div class="day-display" id="dayDisplay">Loading...</div>
+        </div>
+
+        <!-- Calendar Widget -->
+        <div class="widget calendar-widget">
+            <div class="widget-title">📅 Calendar <span class="update-interval">(updates every 60s)</span></div>
+            <div class="calendar-header" id="calendarHeader">---- ----</div>
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- Calendar will be populated here -->
+            </div>
+            <div>
+                <strong>Today's Events:</strong>
+                <ul class="events-list" id="eventsList">
+                    <!-- Events will be populated here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Vocabulary Widget -->
+        <div class="widget vocab-widget">
+            <div class="widget-title">📚 Word of the Day <span class="update-interval">(updates every 300s)</span></div>
+            <div class="vocab-word" id="vocabWord">Loading...</div>
+            <div class="vocab-pronunciation" id="vocabPronunciation">...</div>
+            <div class="vocab-part-of-speech" id="vocabPartOfSpeech">...</div>
+            <div class="vocab-definition" id="vocabDefinition">Loading definition...</div>
+            <div class="vocab-example" id="vocabExample">...</div>
+            <div class="vocab-source" id="vocabSource">...</div>
+        </div>
+
+        <!-- Philosophy Quote Widget -->
+        <div class="widget quote-widget">
+            <div class="widget-title">💭 Philosophy Quote <span class="update-interval">(updates every 120s)</span></div>
+            <div class="quote-text" id="quoteText">Loading wisdom...</div>
+            <div class="quote-author" id="quoteAuthor">...</div>
+            <div class="quote-source" id="quoteSource">...</div>
+        </div>
+
+        <!-- Daily Puzzle Widget -->
+        <div class="widget puzzle-widget">
+            <div class="widget-title">🧩 Daily Puzzle <span class="update-interval">(updates every 300s)</span></div>
+            <div class="puzzle-category" id="puzzleCategory">Loading...</div>
+            <div class="puzzle-question" id="puzzleQuestion">Loading puzzle...</div>
+            <button class="show-answer-btn" onclick="togglePuzzleAnswer()">Show Answer</button>
+            <div class="puzzle-answer" id="puzzleAnswer">...</div>
+        </div>
+
+        <!-- Weather Widget -->
+        <div class="widget weather-widget">
+            <div class="widget-title">🌤️ Weather <span class="update-interval">(updates every 180s)</span></div>
+            <div class="weather-main" id="weatherMain">Loading...</div>
+            <div class="weather-details">
+                <div class="weather-item">
+                    <strong>Humidity:</strong>
+                    <span id="weatherHumidity">--%</span>
+                </div>
+                <div class="weather-item">
+                    <strong>Wind:</strong>
+                    <span id="weatherWind">-- km/h</span>
+                </div>
+            </div>
+            <div class="weather-source" id="weatherSource">Source: --</div>
+        </div>
+
+        <!-- System Stats Widget -->
+        <div class="widget system-widget">
+            <div class="widget-title">💻 System Stats <span class="update-interval">(updates every 5s)</span></div>
+            <div class="stat-item">
+                <span>CPU Usage:</span>
+                <div>
+                    <span id="cpuPercent">--%</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill" id="cpuBar"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span>Memory:</span>
+                <div>
+                    <span id="memoryPercent">--%</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill" id="memoryBar"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span>Disk:</span>
+                <div>
+                    <span id="diskPercent">--%</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill" id="diskBar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM Chat Widget -->
+        <div class="widget llm-widget">
+            <div class="widget-title">🤖 Ask AI Assistant</div>
+            <div class="llm-form">
+                <select class="model-select" id="modelSelect" title="Select AI Model">
+                    <option value="">Select AI Model...</option>
+                </select>
+                <textarea class="question-input" id="questionInput" placeholder="Ask any question..."></textarea>
+                <button class="ask-btn" id="askBtn" onclick="askLLM()">Ask AI</button>
+            </div>
+            <div class="llm-response llm-response-hidden" id="llmResponse">
+                <div class="response-meta" id="responseMeta"></div>
+                <div id="responseText"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        let isConnected = false;
+
+        // Connection handlers
+        socket.on('connect', function() {
+            console.log('Connected to dashboard server');
+            isConnected = true;
+            loadInitialData();
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Disconnected from dashboard server');
+            isConnected = false;
+        });
+
+        // Live update handlers
+        socket.on('time_update', function(data) {
+            updateTimeDisplay(data);
+        });
+
+        socket.on('calendar_update', function(data) {
+            updateCalendar(data);
+        });
+
+        socket.on('quote_update', function(data) {
+            updateQuote(data);
+        });
+
+        socket.on('vocab_update', function(data) {
+            updateVocabulary(data);
+        });
+
+        socket.on('puzzle_update', function(data) {
+            updatePuzzle(data);
+        });
+
+        socket.on('weather_update', function(data) {
+            updateWeather(data);
+        });
+
+        socket.on('system_update', function(data) {
+            updateSystemStats(data);
+        });
+
+        // LLM handlers
+        socket.on('llm_started', function(data) {
+            showLLMLoading(data);
+        });
+
+        socket.on('llm_response', function(data) {
+            showLLMResponse(data);
+        });
+
+        socket.on('llm_error', function(data) {
+            showLLMError(data);
+        });
+
+        // Load initial data
+        function loadInitialData() {
+            fetch('/api/dashboard/time').then(r => r.json()).then(updateTimeDisplay);
+            fetch('/api/dashboard/calendar').then(r => r.json()).then(updateCalendar);
+            fetch('/api/dashboard/quote').then(r => r.json()).then(updateQuote);
+            fetch('/api/dashboard/vocabulary').then(r => r.json()).then(updateVocabulary);
+            fetch('/api/dashboard/puzzle').then(r => r.json()).then(updatePuzzle);
+            fetch('/api/dashboard/weather').then(r => r.json()).then(updateWeather);
+            fetch('/api/dashboard/system').then(r => r.json()).then(updateSystemStats);
+            loadModels();
+        }
+
+        // Update functions
+        function updateTimeDisplay(data) {
+            document.getElementById('timeDisplay').textContent = data.time;
+            document.getElementById('dateDisplay').textContent = data.full_date;
+            document.getElementById('dayDisplay').textContent = data.day;
+        }
+
+        function updateCalendar(data) {
+            document.getElementById('calendarHeader').textContent = data.month;
+            
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Add weekday headers
+            data.weekdays.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day header';
+                dayEl.textContent = day;
+                grid.appendChild(dayEl);
+            });
+            
+            // Add calendar days
+            data.calendar.forEach(week => {
+                week.forEach(day => {
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'calendar-day';
+                    if (day === 0) {
+                        dayEl.className += ' other-month';
+                        dayEl.textContent = '';
+                    } else {
+                        dayEl.textContent = day;
+                        if (day === data.today) {
+                            dayEl.className += ' today';
+                        }
+                    }
+                    grid.appendChild(dayEl);
+                });
+            });
+            
+            // Update events
+            const eventsList = document.getElementById('eventsList');
+            eventsList.innerHTML = '';
+            data.events.forEach(event => {
+                const li = document.createElement('li');
+                li.textContent = event;
+                eventsList.appendChild(li);
+            });
+        }
+
+        function updateQuote(data) {
+            document.getElementById('quoteText').textContent = `"${data.text}"`;
+            document.getElementById('quoteAuthor').textContent = `— ${data.author}`;
+            document.getElementById('quoteSource').textContent = `Source: ${data.source}`;
+        }
+
+        function updateVocabulary(data) {
+            document.getElementById('vocabWord').textContent = data.word;
+            document.getElementById('vocabPronunciation').textContent = data.pronunciation || '';
+            document.getElementById('vocabPartOfSpeech').textContent = data.part_of_speech || '';
+            document.getElementById('vocabDefinition').textContent = data.definition;
+            document.getElementById('vocabExample').textContent = data.example ? `"${data.example}"` : '';
+            document.getElementById('vocabSource').textContent = `Source: ${data.source}`;
+        }
+
+        function updatePuzzle(data) {
+            document.getElementById('puzzleCategory').textContent = data.category;
+            document.getElementById('puzzleQuestion').textContent = data.question;
+            document.getElementById('puzzleAnswer').textContent = data.answer;
+            document.getElementById('puzzleAnswer').classList.add('puzzle-answer-hidden');
+            document.querySelector('.show-answer-btn').textContent = 'Show Answer';
+        }
+
+        function updateWeather(data) {
+            document.getElementById('weatherMain').innerHTML = `
+                <div>${data.temperature}</div>
+                <div>${data.description}</div>
+            `;
+            document.getElementById('weatherHumidity').textContent = data.humidity;
+            document.getElementById('weatherWind').textContent = data.wind;
+            document.getElementById('weatherSource').textContent = `Source: ${data.source}`;
+        }
+
+        function updateSystemStats(data) {
+            if (!data.available) {
+                document.querySelector('.system-widget').innerHTML = 
+                    '<div class="widget-title">💻 System Stats</div><div>System monitoring unavailable</div>';
+                return;
+            }
+            
+            document.getElementById('cpuPercent').textContent = `${data.cpu_percent.toFixed(1)}%`;
+            document.getElementById('memoryPercent').textContent = `${data.memory_percent.toFixed(1)}%`;
+            document.getElementById('diskPercent').textContent = `${data.disk_percent.toFixed(1)}%`;
+            
+            updateStatBar('cpuBar', data.cpu_percent);
+            updateStatBar('memoryBar', data.memory_percent);
+            updateStatBar('diskBar', data.disk_percent);
+        }
+
+        function updateStatBar(barId, percent) {
+            const bar = document.getElementById(barId);
+            bar.style.width = `${percent}%`;
+            
+            // Update color based on usage
+            bar.className = 'stat-fill';
+            if (percent > 80) {
+                bar.className += ' high';
+            } else if (percent > 60) {
+                bar.className += ' medium';
+            }
+        }
+
+        function loadModels() {
+            fetch('/api/dashboard/models')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('modelSelect');
+                    select.innerHTML = '<option value="">Select AI Model...</option>';
+                    
+                    if (data.success && data.models.length > 0) {
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model;
+                            option.textContent = model;
+                            select.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.textContent = 'No models available';
+                        option.disabled = true;
+                        select.appendChild(option);
+                    }
+                });
+        }
+
+        // Puzzle answer toggle
+        function togglePuzzleAnswer() {
+            const answer = document.getElementById('puzzleAnswer');
+            const btn = document.querySelector('.show-answer-btn');
+            
+            if (answer.classList.contains('puzzle-answer-hidden')) {
+                answer.classList.remove('puzzle-answer-hidden');
+                btn.textContent = 'Hide Answer';
+            } else {
+                answer.classList.add('puzzle-answer-hidden');
+                btn.textContent = 'Show Answer';
+            }
+        }
+
+        // LLM interaction
+        function askLLM() {
+            const question = document.getElementById('questionInput').value.trim();
+            const model = document.getElementById('modelSelect').value;
+            
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            if (!model) {
+                alert('Please select a model');
+                return;
+            }
+            
+            socket.emit('ask_llm', {
+                question: question,
+                model: model
+            });
+        }
+
+        function showLLMLoading(data) {
+            const responseDiv = document.getElementById('llmResponse');
+            const metaDiv = document.getElementById('responseMeta');
+            const textDiv = document.getElementById('responseText');
+            
+            metaDiv.innerHTML = `<span class="status-indicator status-loading"></span>Asking ${data.model}...`;
+            textDiv.innerHTML = '<div class="loading"></div> Thinking...';
+            responseDiv.classList.remove('llm-response-hidden');
+            
+            document.getElementById('askBtn').disabled = true;
+            document.getElementById('askBtn').textContent = 'Processing...';
+        }
+
+        function showLLMResponse(data) {
+            const metaDiv = document.getElementById('responseMeta');
+            const textDiv = document.getElementById('responseText');
+            
+            metaDiv.innerHTML = `<span class="status-indicator status-online"></span>${data.model} (${data.response_time.toFixed(2)}s)`;
+            textDiv.textContent = data.response;
+            
+            document.getElementById('askBtn').disabled = false;
+            document.getElementById('askBtn').textContent = 'Ask AI';
+            document.getElementById('questionInput').value = '';
+        }
+
+        function showLLMError(data) {
+            const metaDiv = document.getElementById('responseMeta');
+            const textDiv = document.getElementById('responseText');
+            
+            metaDiv.innerHTML = `<span class="status-indicator status-offline"></span>Error`;
+            textDiv.textContent = data.message;
+            
+            document.getElementById('askBtn').disabled = false;
+            document.getElementById('askBtn').textContent = 'Ask AI';
+        }
+
+        // Enter key support for question input
+        document.getElementById('questionInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                askLLM();
+            }
+        });
+    </script>
+</body>
+</html>
