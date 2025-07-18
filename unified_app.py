@@ -438,16 +438,21 @@ Your final argument (2-3 paragraphs):"""
 
 Provide a detailed analysis with these sections:
 
-1. **PARTICIPANT POSITIONS**: Summarize each model's core stance
-2. **ARGUMENT EVOLUTION**: How positions developed across rounds  
-3. **KEY INTERACTIONS**: Highlight where models directly engaged with each other
-4. **STRONGEST POINTS**: Most compelling arguments from each side
-5. **AREAS OF AGREEMENT**: Common ground found during debate
-6. **UNRESOLVED TENSIONS**: Remaining disagreements
-7. **DEBATE QUALITY**: Assessment of reasoning and evidence quality
-8. **SYNTHESIS**: A balanced perspective that incorporates the best insights
+1. **VOTING SUMMARY**: Based on each participant's final stance, determine which side of the debate topic they support. For a topic like "Is family or friends more important?", categorize each model as supporting either "Family" or "Friends" based on their arguments. Present this as:
+   - Family supporters: [list models] (X votes, Y%)
+   - Friends supporters: [list models] (X votes, Y%)
+   - Neutral/Balanced: [list models] (X votes, Y%)
 
-Format with clear headers and maintain analytical objectivity.
+2. **PARTICIPANT POSITIONS**: Summarize each model's core stance with their reasoning
+3. **ARGUMENT EVOLUTION**: How positions developed across rounds  
+4. **KEY INTERACTIONS**: Highlight where models directly engaged with each other
+5. **STRONGEST POINTS**: Most compelling arguments from each side
+6. **AREAS OF AGREEMENT**: Common ground found during debate
+7. **UNRESOLVED TENSIONS**: Remaining disagreements
+8. **DEBATE QUALITY**: Assessment of reasoning and evidence quality
+9. **FINAL VERDICT**: Based on the quality of arguments presented, which position had stronger support and why
+
+Format with clear headers, start with the VOTING SUMMARY section, and maintain analytical objectivity.
 
 COMPREHENSIVE ANALYSIS:"""
 
@@ -1352,6 +1357,27 @@ async def process_enhanced_debate(topic: str, selected_models: list, debate_roun
     except Exception as e:
         socketio.emit('error', {
             'message': f'Error during enhanced debate processing: {str(e)}',
+            'session_id': session_id
+        })
+
+@socketio.on('cancel_debate')
+def handle_cancel_debate(data):
+    """Handle debate cancellation request."""
+    session_id = data.get('session_id') or request.sid
+    
+    try:
+        # Emit cancellation confirmation
+        socketio.emit('debate_cancelled', {
+            'message': 'Debate has been cancelled by user',
+            'session_id': session_id
+        }, room=session_id)
+        
+        print(f"🛑 Debate cancelled for session: {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error cancelling debate: {e}")
+        socketio.emit('error', {
+            'message': f'Error cancelling debate: {str(e)}',
             'session_id': session_id
         })
 

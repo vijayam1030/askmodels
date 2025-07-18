@@ -192,6 +192,28 @@
             transform: none;
         }
 
+        .debate-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .debate-controls .action-btn {
+            flex: 1;
+        }
+
+        .cancel-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
+        }
+
+        .cancel-btn:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #e53935 100%) !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         /* Q&A Specific Styles */
         .question-type {
             display: flex;
@@ -1516,7 +1538,10 @@
                         </div>
                     </div>
 
-                    <button class="action-btn" id="startDebateBtn">🗣️ Start Enhanced Debate</button>
+                    <div class="debate-controls">
+                        <button class="action-btn" id="startDebateBtn">🗣️ Start Enhanced Debate</button>
+                        <button class="action-btn cancel-btn hidden" id="cancelDebateBtn">🛑 Cancel Debate</button>
+                    </div>
                 </div>
 
                 <div id="debate-area">
@@ -1634,6 +1659,7 @@
         let isQuerying = false;
         let isDebating = false;
         let currentDebate = null;
+        let currentDebateRound = 1; // Track the current debate round
         let activeTab = 'qa';
 
         // DOM elements
@@ -1652,6 +1678,7 @@
         const participantCountSlider = document.getElementById('participantCount');
         const participantDisplay = document.getElementById('participantDisplay');
         const startDebateBtn = document.getElementById('startDebateBtn');
+        const cancelDebateBtn = document.getElementById('cancelDebateBtn');
         const debateArea = document.getElementById('debate-area');
         const debateStatus = document.getElementById('debateStatus');
         const debateProgress = document.getElementById('debateProgress');
@@ -1776,6 +1803,7 @@
         socket.on('debate_started', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
                 currentDebate = data;
+                currentDebateRound = 1; // Reset to round 1 when debate starts
                 isDebating = true;
                 
                 debateStatus.classList.add('active');
@@ -1887,6 +1915,7 @@
 
         socket.on('debate_round_started', (data) => {
             if (data.session_id === sessionId && activeTab === 'debate') {
+                currentDebateRound = data.round; // Update the current round
                 roundIndicator.textContent = `Round ${data.round} of ${data.total_rounds} - Enhanced Interactive Mode`;
                 
                 const progress = (data.round - 1) / data.total_rounds * 100;
@@ -2032,6 +2061,29 @@
                 
                 startDebateBtn.disabled = false;
                 startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                
+                // Hide cancel button
+                cancelDebateBtn.classList.add('hidden');
+                
+                // Re-enable model selection after debate completion
+                document.querySelectorAll('.debate-model-checkbox').forEach(checkbox => {
+                    checkbox.disabled = false;
+                });
+                document.querySelectorAll('.debate-model-card').forEach(card => {
+                    card.classList.remove('disabled');
+                    card.style.pointerEvents = 'auto';
+                });
+                document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach(button => {
+                    button.disabled = false;
+                });
+            }
+        });
+
+        socket.on('debate_cancelled', (data) => {
+            if (data.session_id === sessionId && activeTab === 'debate') {
+                console.log('Debate cancelled:', data.message);
+                // The UI is already reset by the cancelDebate function
+                // This is just for confirmation
             }
         });
 
@@ -2045,12 +2097,16 @@
                 submitBtn.textContent = '🚀 Query Models';
                 startDebateBtn.disabled = false;
                 startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                
+                // Hide cancel button on error
+                cancelDebateBtn.classList.add('hidden');
             }
         });
 
         // Event listeners
         submitBtn.addEventListener('click', handleSubmit);
         startDebateBtn.addEventListener('click', startDebate);
+        cancelDebateBtn.addEventListener('click', cancelDebate);
 
         streamingToggle.addEventListener('click', () => {
             const isChecked = streamingCheckbox.checked;
@@ -2084,13 +2140,9 @@
         
         // Tab-based debate response functions
         function createOrUpdateTabDebateResponse(modelName, status, content = '') {
-            // Determine which round we're in
-            let currentRound = 1;
-            if (roundIndicator.textContent.includes('Round 2')) currentRound = 2;
-            else if (roundIndicator.textContent.includes('Round 3')) currentRound = 3;
-            
-            const roundContent = document.getElementById(`round${currentRound}Content`);
-            const responseId = `tab-response-${modelName}-${currentRound}`;
+            // Use the global currentDebateRound variable
+            const roundContent = document.getElementById(`round${currentDebateRound}Content`);
+            const responseId = `tab-response-${modelName}-${currentDebateRound}`;
             
             let responseDiv = document.getElementById(responseId);
             
@@ -2104,22 +2156,22 @@
                 header.className = 'tab-model-header';
                 header.innerHTML = `
                     <span class="tab-model-name">🤖 ${modelName}</span>
-                    <span class="tab-model-status ${status}" id="tab-status-${modelName}-${currentRound}">
+                    <span class="tab-model-status ${status}" id="tab-status-${modelName}-${currentDebateRound}">
                         ${status === 'processing' ? 'Thinking...' : status}
                     </span>
                 `;
                 
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'tab-model-content';
-                contentDiv.id = `tab-content-${modelName}-${currentRound}`;
+                contentDiv.id = `tab-content-${modelName}-${currentDebateRound}`;
                 
                 responseDiv.appendChild(header);
                 responseDiv.appendChild(contentDiv);
                 roundContent.appendChild(responseDiv);
             }
 
-            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentRound}`);
-            const statusBadge = document.getElementById(`tab-status-${modelName}-${currentRound}`);
+            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentDebateRound}`);
+            const statusBadge = document.getElementById(`tab-status-${modelName}-${currentDebateRound}`);
 
             if (status === 'processing') {
                 contentDiv.classList.add('streaming');
@@ -2133,12 +2185,8 @@
         }
 
         function appendToTabDebateResponse(modelName, chunk) {
-            // Determine which round we're in
-            let currentRound = 1;
-            if (roundIndicator.textContent.includes('Round 2')) currentRound = 2;
-            else if (roundIndicator.textContent.includes('Round 3')) currentRound = 3;
-            
-            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentRound}`);
+            // Use the global currentDebateRound variable
+            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentDebateRound}`);
             if (contentDiv) {
                 contentDiv.textContent += chunk;
                 contentDiv.scrollTop = contentDiv.scrollHeight;
@@ -2146,13 +2194,9 @@
         }
 
         function updateTabDebateResponseStatus(modelName, status, responseTime) {
-            // Determine which round we're in
-            let currentRound = 1;
-            if (roundIndicator.textContent.includes('Round 2')) currentRound = 2;
-            else if (roundIndicator.textContent.includes('Round 3')) currentRound = 3;
-            
-            const statusBadge = document.getElementById(`tab-status-${modelName}-${currentRound}`);
-            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentRound}`);
+            // Use the global currentDebateRound variable
+            const statusBadge = document.getElementById(`tab-status-${modelName}-${currentDebateRound}`);
+            const contentDiv = document.getElementById(`tab-content-${modelName}-${currentDebateRound}`);
             
             if (statusBadge && contentDiv) {
                 contentDiv.classList.remove('streaming');
@@ -2741,12 +2785,71 @@
             isDebating = true;
             startDebateBtn.disabled = true;
             startDebateBtn.textContent = '⏳ Starting Enhanced Debate...';
+            
+            // Show cancel button
+            cancelDebateBtn.classList.remove('hidden');
+            document.querySelectorAll('.debate-model-checkbox').forEach(checkbox => {
+                checkbox.disabled = true;
+            });
+            document.querySelectorAll('.debate-model-card').forEach(card => {
+                card.classList.add('disabled');
+                card.style.pointerEvents = 'none';
+            });
+            document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach(button => {
+                button.disabled = true;
+            });
 
             socket.emit('start_debate', {
                 topic: topic,
                 selected_models: selectedModels,
                 debate_rounds: debateRounds
             });
+        }
+
+        function cancelDebate() {
+            if (!isDebating) return;
+
+            if (confirm('Are you sure you want to cancel the ongoing debate?')) {
+                // Reset debate state
+                isDebating = false;
+                currentDebateRound = 1;
+                currentDebate = null;
+
+                // Reset UI
+                startDebateBtn.disabled = false;
+                startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                cancelDebateBtn.classList.add('hidden');
+
+                // Re-enable model selection
+                document.querySelectorAll('.debate-model-checkbox').forEach(checkbox => {
+                    checkbox.disabled = false;
+                });
+                document.querySelectorAll('.debate-model-card').forEach(card => {
+                    card.classList.remove('disabled');
+                    card.style.pointerEvents = 'auto';
+                });
+                document.querySelectorAll('.select-all-specialty, .clear-all-specialty').forEach(button => {
+                    button.disabled = false;
+                });
+
+                // Hide debate progress and tabs
+                document.getElementById('debateProgress').style.display = 'none';
+                document.getElementById('debateTabs').style.display = 'none';
+                
+                // Clear debate content
+                document.getElementById('debateRounds').innerHTML = '';
+                
+                // Reset status indicators
+                const debateStatus = document.getElementById('debateStatus');
+                debateStatus.classList.remove('active');
+                
+                // Emit cancel event to server
+                socket.emit('cancel_debate', {
+                    session_id: sessionId
+                });
+                
+                console.log('Debate cancelled by user');
+            }
         }
 
         // Response management functions (Q&A)
