@@ -2628,13 +2628,25 @@
                     if (responseContent) {
                         let currentContent = responseContent.innerHTML;
                         if (currentContent.includes('AI is thinking')) {
+                            // First chunk - replace the thinking message
                             responseContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                            console.log('✅ Voice: Created new response-text div with first chunk');
                         } else {
+                            // Subsequent chunks - append to existing content
                             const responseText = responseContent.querySelector('.response-text');
                             if (responseText) {
                                 responseText.innerHTML += data.chunk;
+                                console.log('✅ Voice: Appended chunk to existing response-text');
+                            } else {
+                                // Fallback: create response text div if it doesn't exist
+                                responseContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                                console.log('✅ Voice: Created fallback response-text div');
                             }
                         }
+                        // Auto-scroll to bottom
+                        responseContent.scrollTop = responseContent.scrollHeight;
+                    } else {
+                        console.error('❌ Voice: voiceResponseContent not found for chunk!');
                     }
                 } else if (activeTab === 'image') {
                     console.log('🔍 Handling image tab chunk_received');
@@ -4217,10 +4229,13 @@
             responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${model}...`;
             responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
             
-            // Send to backend for processing
-            socket.emit('ask_llm', {
+            // Send to backend for streaming processing
+            socket.emit('submit_query', {
                 question: text,
-                model: model
+                models: [model],
+                session_id: sessionId,
+                streaming: true,
+                question_type: 'general'
             });
         }
 
