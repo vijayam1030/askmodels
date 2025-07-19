@@ -4075,8 +4075,36 @@
             // Initialize speech recognition
             initializeSpeechRecognition();
             
+            // Check microphone permissions
+            checkMicrophonePermissions();
+            
             // Setup event listeners
             setupVoiceEventListeners();
+        }
+
+        function checkMicrophonePermissions() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateVoiceStatus('❌', 'Microphone access not supported in this browser');
+                return;
+            }
+
+            // Check if we can access the microphone
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    // Permission granted, close the stream
+                    stream.getTracks().forEach(track => track.stop());
+                    updateVoiceStatus('✅', 'Microphone ready - Click "Start Recording" to begin');
+                })
+                .catch(function(error) {
+                    console.log('Microphone permission check:', error.name);
+                    if (error.name === 'NotAllowedError') {
+                        updateVoiceStatus('❌', 'Microphone access denied. Please allow permissions.');
+                    } else if (error.name === 'NotFoundError') {
+                        updateVoiceStatus('❌', 'No microphone found. Please connect a microphone.');
+                    } else {
+                        updateVoiceStatus('⚠️', 'Click "Start Recording" to test microphone access');
+                    }
+                });
         }
 
         function populateVoiceModelSelect() {
@@ -4149,7 +4177,24 @@
             
             recognition.onerror = function(event) {
                 console.error('Speech recognition error:', event.error);
-                updateVoiceStatus('❌', `Error: ${event.error}`);
+                let errorMessage = '';
+                switch(event.error) {
+                    case 'not-allowed':
+                        errorMessage = 'Microphone access denied. Please allow microphone permissions.';
+                        break;
+                    case 'no-speech':
+                        errorMessage = 'No speech detected. Please try speaking louder.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage = 'Audio capture failed. Check your microphone connection.';
+                        break;
+                    case 'network':
+                        errorMessage = 'Network error. Please check your internet connection.';
+                        break;
+                    default:
+                        errorMessage = `Error: ${event.error}`;
+                }
+                updateVoiceStatus('❌', errorMessage);
                 resetRecordingState();
             };
             
@@ -4174,9 +4219,27 @@
                 return;
             }
             
-            transcribedText = '';
-            updateTranscriptionDisplay();
-            recognition.start();
+            // Request microphone permission first
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    // Permission granted, stop the test stream and start recognition
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    transcribedText = '';
+                    updateTranscriptionDisplay();
+                    recognition.start();
+                })
+                .catch(function(error) {
+                    console.error('Microphone permission error:', error);
+                    if (error.name === 'NotAllowedError') {
+                        updateVoiceStatus('❌', 'Microphone access denied. Please allow microphone permissions and try again.');
+                        alert('Microphone access is required for voice recording. Please:\n\n1. Click the microphone icon in your browser\'s address bar\n2. Select "Allow" for microphone access\n3. Refresh the page and try again');
+                    } else if (error.name === 'NotFoundError') {
+                        updateVoiceStatus('❌', 'No microphone found. Please connect a microphone and try again.');
+                    } else {
+                        updateVoiceStatus('❌', `Microphone error: ${error.message}`);
+                    }
+                });
         }
 
         function stopRecording() {
@@ -4229,13 +4292,12 @@
             responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${model}...`;
             responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
             
-            // Send to backend for streaming processing
-            socket.emit('submit_query', {
+            // Send to backend for streaming processing using the same handler as Q&A tab
+            socket.emit('query_models', {
                 question: text,
-                models: [model],
-                session_id: sessionId,
+                type: 'general',
                 streaming: true,
-                question_type: 'general'
+                selected_models: [model]
             });
         }
 
