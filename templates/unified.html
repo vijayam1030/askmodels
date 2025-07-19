@@ -2793,6 +2793,44 @@
             border-color: #adb5bd;
         }
 
+        /* Conversation Actions Buttons */
+        .conversation-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .conversation-actions .model-action-btn {
+            font-size: 0.8em;
+            padding: 5px 10px;
+        }
+
+        /* New Session button specific styling */
+        .conversation-actions .model-action-btn:first-child {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+
+        .conversation-actions .model-action-btn:first-child:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Clear History button styling */
+        .conversation-actions .model-action-btn:last-child {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            color: #6c757d;
+        }
+
+        .conversation-actions .model-action-btn:last-child:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
         .voice-model-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -3318,7 +3356,7 @@
                         
                         <div class="submit-section">
                             <div class="keyboard-hints">
-                                <small>💡 Tips: Type freely, add voice anytime, press <kbd>Ctrl+Enter</kbd> to submit</small>
+                                <small>💡 Tips: Type freely, add voice anytime, press <kbd>Ctrl+Enter</kbd> to submit, <kbd>Ctrl+Shift+N</kbd> for new session</small>
                             </div>
                             <div class="submit-controls">
                                 <button id="submitUnifiedInput" class="submit-btn">🚀 Submit for Analysis</button>
@@ -3335,10 +3373,22 @@
                         </div>
                     </div>
                     
-                    <div class="voice-response-section" id="voiceResponseSection" style="display: none;">
-                        <h3>🤖 AI Response</h3>
+                    <div class="voice-response-section show" id="voiceResponseSection">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>💬 Conversation History</h3>
+                            <div class="conversation-actions">
+                                <button id="newSessionBtn" class="model-action-btn" onclick="startNewSession()" title="Start a completely new conversation session">
+                                    🆕 New Session
+                                </button>
+                                <button id="clearHistoryBtn" class="model-action-btn" onclick="clearVoiceConversation()" title="Clear conversation history only">
+                                    🗑️ Clear History
+                                </button>
+                            </div>
+                        </div>
                         <div class="voice-response-meta" id="voiceResponseMeta"></div>
-                        <div class="voice-response-content" id="voiceResponseContent"></div>
+                        <div class="voice-response-content" id="voiceResponseContent">
+                            <div class="conversation-placeholder">Start a conversation by typing a question above and submitting it for AI analysis.</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3470,6 +3520,34 @@
         let voiceConversationHistory = []; // Store conversation history
         let currentVoiceResponse = ''; // Current response being streamed
 
+        // Session storage key for conversation history
+        const VOICE_HISTORY_KEY = 'voiceConversationHistory';
+
+        // Load conversation history from localStorage on page load
+        function loadVoiceConversationHistory() {
+            try {
+                const saved = localStorage.getItem(VOICE_HISTORY_KEY);
+                if (saved) {
+                    voiceConversationHistory = JSON.parse(saved);
+                    console.log('📚 Loaded conversation history:', voiceConversationHistory.length, 'entries');
+                    updateVoiceConversationDisplay();
+                }
+            } catch (error) {
+                console.error('Error loading conversation history:', error);
+                voiceConversationHistory = [];
+            }
+        }
+
+        // Save conversation history to localStorage
+        function saveVoiceConversationHistory() {
+            try {
+                localStorage.setItem(VOICE_HISTORY_KEY, JSON.stringify(voiceConversationHistory));
+                console.log('💾 Saved conversation history:', voiceConversationHistory.length, 'entries');
+            } catch (error) {
+                console.error('Error saving conversation history:', error);
+            }
+        }
+
         // Image Processing variables
         let selectedImages = [];
         let extractedTexts = [];
@@ -3570,6 +3648,9 @@
             currentVoiceTask = null;
             hideElement('stopVoiceProcessingBtn');
             
+            // Clear any live responses that are stuck in "processing" state
+            clearVoiceLiveResponses();
+            
             // Re-enable submit button
             const submitBtn = document.getElementById('submitUnifiedInput');
             if (submitBtn) {
@@ -3580,8 +3661,18 @@
             // Emit stop signal to server
             socket.emit('stop_processing');
             
-            // Reset UI elements
-            hideElement('voiceResponseSection');
+            // Clear any processing status
+            const responseMeta = document.getElementById('voiceResponseMeta');
+            if (responseMeta) {
+                responseMeta.innerHTML = '';
+            }
+            
+            // Keep response section visible but show conversation history
+            const responseSection = document.getElementById('voiceResponseSection');
+            if (responseSection) {
+                responseSection.classList.add('show');
+                updateVoiceConversationDisplay(); // Show conversation history instead of stuck processing
+            }
             
             // Show notification
             showNotification('Voice processing stopped successfully', 'info');
@@ -3696,6 +3787,7 @@
                     // Add the question to conversation history now that AI is starting to respond
                     if (window.currentVoiceQuestion) {
                         voiceConversationHistory.push(window.currentVoiceQuestion);
+                        saveVoiceConversationHistory(); // Save to localStorage
                         window.currentVoiceQuestion = null; // Clear temporary storage
                     }
                     
@@ -3859,6 +3951,9 @@
                                     responseTime: response.responseTime
                                 });
                             });
+                            
+                            // Save conversation history after adding all responses
+                            saveVoiceConversationHistory();
                             
                             // Clear the temporary responses
                             window.voiceModelResponses = {};
@@ -5784,9 +5879,15 @@
                     }
                 }
                 
-                // Escape to clear
+                // Escape to clear input only
                 if (e.key === 'Escape') {
                     clearUnifiedInput();
+                }
+                
+                // Ctrl+Shift+N or Cmd+Shift+N for New Session
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+                    e.preventDefault();
+                    startNewSession();
                 }
             });
             
@@ -6022,10 +6123,10 @@
             // Clear conversation history
             clearVoiceConversation();
             
-            // Hide response section
+            // Keep response section visible to show conversation history
             const responseSection = document.getElementById('voiceResponseSection');
             if (responseSection) {
-                responseSection.style.display = 'none';
+                responseSection.classList.add('show');
             }
         }
 
@@ -6042,6 +6143,9 @@
                 return;
             }
             
+            // Clear any previous live responses to start fresh
+            clearVoiceLiveResponses();
+            
             // Store the current question temporarily (don't add to history yet)
             window.currentVoiceQuestion = {
                 type: 'question',
@@ -6057,8 +6161,38 @@
             const responseSection = document.getElementById('voiceResponseSection');
             const responseMeta = document.getElementById('voiceResponseMeta');
             
-            responseSection.style.display = 'block';
-            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModels.length} model${selectedModels.length !== 1 ? 's' : ''}...`;
+            responseSection.classList.add('show');
+            
+            // Build conversation context for AI models
+            let conversationContext = '';
+            if (voiceConversationHistory.length > 0) {
+                // Include the last few exchanges for context (limit to last 6 entries to avoid token limits)
+                const recentHistory = voiceConversationHistory.slice(-6);
+                const contextParts = [];
+                
+                recentHistory.forEach(entry => {
+                    if (entry.type === 'question') {
+                        contextParts.push(`Human: ${entry.content}`);
+                    } else if (entry.type === 'response' && entry.content) {
+                        // Use content from the first model if multiple responses exist
+                        let responseText = entry.content;
+                        if (typeof responseText === 'object' && responseText.responses) {
+                            const firstModel = Object.keys(responseText.responses)[0];
+                            responseText = responseText.responses[firstModel] || '';
+                        }
+                        if (responseText.trim()) {
+                            contextParts.push(`Assistant: ${responseText.trim()}`);
+                        }
+                    }
+                });
+                
+                if (contextParts.length > 0) {
+                    conversationContext = contextParts.join('\n\n') + '\n\n';
+                }
+            }
+            
+            const contextIndicator = conversationContext ? ' 💭 (with conversation context)' : '';
+            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModels.length} model${selectedModels.length !== 1 ? 's' : ''}${contextIndicator}...`;
             
             // Reset current response accumulator for this new query
             currentVoiceResponse = '';
@@ -6071,16 +6205,27 @@
             currentCursorPosition = text.length; // Set cursor to end
             updateUnifiedTextStats();
             
+            // Combine context with current question
+            const fullQuestion = conversationContext ? 
+                `Previous conversation for context:\n${conversationContext}Current question: ${text}` : 
+                text;
+            
             // Send to backend using the existing query_models event
             const queryData = {
                 session_id: sessionId,
-                question: text,
+                question: fullQuestion,
                 question_type: 'general',
                 selected_models: selectedModels, // Send all selected models
-                streaming: true
+                streaming: true,
+                conversation_context: conversationContext ? true : false // Flag to indicate context is included
             };
             
-            console.log('🚀 Submitting unified input to multiple models:', queryData);
+            console.log('🚀 Submitting unified input with conversation context:', {
+                originalQuestion: text,
+                contextLength: conversationContext.length,
+                historyEntries: voiceConversationHistory.length,
+                selectedModels: selectedModels
+            });
             socket.emit('query_models', queryData);
         }
 
@@ -6089,10 +6234,13 @@
             const responseContent = document.getElementById('voiceResponseContent');
             if (!responseContent) return;
             
-            // If we have active model responses, show them instead of history
+            // If we have active model responses that are still processing, show them instead of history
             if (window.voiceModelResponses && Object.keys(window.voiceModelResponses).length > 0) {
-                updateVoiceResponseDisplay();
-                return;
+                const hasProcessing = Object.values(window.voiceModelResponses).some(r => r.status === 'processing');
+                if (hasProcessing) {
+                    updateVoiceResponseDisplay();
+                    return;
+                }
             }
             
             // Otherwise show conversation history
@@ -6127,12 +6275,24 @@
             
             // Show placeholder if no conversation
             if (conversationHtml === '') {
-                conversationHtml = '<div class="conversation-placeholder">Start a conversation by typing a question above and submitting it for AI analysis.</div>';
+                conversationHtml = `
+                    <div class="conversation-placeholder">
+                        <h4>💬 Welcome to Voice-to-Text Chat!</h4>
+                        <p>This session will remember your conversation history. You can:</p>
+                        <ul style="text-align: left; display: inline-block; margin: 15px 0;">
+                            <li>Type questions and get AI responses</li>
+                            <li>Use voice input with the microphone button</li>
+                            <li>Ask follow-up questions that reference previous responses</li>
+                            <li>Select multiple AI models for diverse perspectives</li>
+                        </ul>
+                        <p><strong>Start your conversation by typing a question above!</strong></p>
+                    </div>
+                `;
             }
             
             responseContent.innerHTML = conversationHtml;
             
-            // Auto-scroll to bottom
+            // Auto-scroll to bottom to show latest conversation
             responseContent.scrollTop = responseContent.scrollHeight;
         }
 
@@ -6141,14 +6301,113 @@
             voiceConversationHistory = [];
             currentVoiceResponse = '';
             window.currentVoiceQuestion = null; // Clear temporary question storage
-            window.voiceModelResponses = {}; // Clear model responses tracking
+            clearVoiceLiveResponses(); // Clear any ongoing live responses
+            
+            // Clear from localStorage
+            try {
+                localStorage.removeItem(VOICE_HISTORY_KEY);
+                console.log('🗑️ Cleared conversation history from storage');
+            } catch (error) {
+                console.error('Error clearing conversation history from storage:', error);
+            }
             
             const responseContent = document.getElementById('voiceResponseContent');
             if (responseContent) {
-                responseContent.innerHTML = '<div class="conversation-placeholder">Start a conversation by typing a question above and submitting it for AI analysis.</div>';
+                responseContent.innerHTML = `
+                    <div class="conversation-placeholder">
+                        <h4>💬 Welcome to Voice-to-Text Chat!</h4>
+                        <p>This session will remember your conversation history. You can:</p>
+                        <ul style="text-align: left; display: inline-block; margin: 15px 0;">
+                            <li>Type questions and get AI responses</li>
+                            <li>Use voice input with the microphone button</li>
+                            <li>Ask follow-up questions that reference previous responses</li>
+                            <li>Select multiple AI models for diverse perspectives</li>
+                        </ul>
+                        <p><strong>Start your conversation by typing a question above!</strong></p>
+                    </div>
+                `;
+            }
+            
+            // Clear any processing status
+            const responseMeta = document.getElementById('voiceResponseMeta');
+            if (responseMeta) {
+                responseMeta.innerHTML = '';
             }
             
             console.log('✅ Voice conversation history cleared');
+        }
+
+        // Clear live voice responses (separate from conversation history)
+        function clearVoiceLiveResponses() {
+            window.voiceModelResponses = {}; // Clear model responses tracking
+            
+            // Clear any "processing" status indicators
+            const responseMeta = document.getElementById('voiceResponseMeta');
+            if (responseMeta) {
+                responseMeta.innerHTML = '';
+            }
+            
+            console.log('🧹 Cleared live voice responses');
+        }
+
+        // Start a completely new session - clears everything and resets to initial state
+        function startNewSession() {
+            console.log('🆕 Starting new session...');
+            
+            // Clear the input field completely
+            const textInput = document.getElementById('unifiedTextInput');
+            if (textInput) {
+                textInput.value = '';
+                textInput.focus(); // Focus on input for immediate typing
+            }
+            
+            // Reset cursor position and question preservation
+            currentCursorPosition = 0;
+            window.questionPreserved = false;
+            window.lastSubmittedQuestion = null;
+            
+            // Stop any ongoing voice recording
+            if (isUnifiedRecording) {
+                stopVoiceInput();
+            }
+            
+            // Stop any ongoing processing
+            if (isVoiceProcessing) {
+                stopVoiceProcessing();
+            }
+            
+            // Clear all conversation data
+            clearVoiceConversation();
+            
+            // Update text stats and button states
+            updateUnifiedTextStats();
+            updateUnifiedSubmitButtonState();
+            
+            // Show a fresh welcome message
+            const responseContent = document.getElementById('voiceResponseContent');
+            if (responseContent) {
+                responseContent.innerHTML = `
+                    <div class="conversation-placeholder">
+                        <h4>🆕 New Session Started!</h4>
+                        <p>Welcome to a fresh conversation session. You can:</p>
+                        <ul style="text-align: left; display: inline-block; margin: 15px 0;">
+                            <li>✨ Ask any question to start a new conversation</li>
+                            <li>🎤 Use voice input for hands-free interaction</li>
+                            <li>💭 Build context with follow-up questions</li>
+                            <li>🤖 Select multiple AI models for diverse insights</li>
+                        </ul>
+                        <p><strong>Ready for your first question!</strong></p>
+                    </div>
+                `;
+            }
+            
+            // Show response section
+            const responseSection = document.getElementById('voiceResponseSection');
+            if (responseSection) {
+                responseSection.classList.add('show');
+            }
+            
+            console.log('✅ New session started successfully');
         }
 
         // Reset voice streaming text accumulator for new queries  
@@ -6464,6 +6723,9 @@
                 if (imageModelSelect) {
                     imageModelSelect.addEventListener('change', updateProcessButton);
                 }
+                
+                // Load conversation history from previous session
+                loadVoiceConversationHistory();
             }, 100);
         });
 
