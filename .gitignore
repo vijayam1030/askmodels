@@ -560,6 +560,79 @@ personal/
 private/
 
 # ===============================
+# Uploads & Media Files
+# ===============================
+# Upload directories
+uploads/
+**/uploads/
+static/uploads/
+media/uploads/
+temp_uploads/
+user_uploads/
+
+# Image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.webp
+*.svg
+*.ico
+*.heic
+*.heif
+
+# Raw image formats
+*.raw
+*.cr2
+*.nef
+*.arw
+*.dng
+
+# Video files
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.3gp
+
+# Audio files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+*.m4a
+
+# Document files (uploaded)
+uploaded_*.pdf
+uploaded_*.doc
+uploaded_*.docx
+uploaded_*.xls
+uploaded_*.xlsx
+uploaded_*.ppt
+uploaded_*.pptx
+
+# Temporary files from uploads
+temp_*
+tmp_*
+upload_temp/
+.upload_cache/
+
+# Processed files
+processed/
+thumbnails/
+resized/
+converted/
+
+# ===============================
 # Security & Privacy
 # ===============================
 # SSH keys
