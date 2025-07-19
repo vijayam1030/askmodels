@@ -4743,17 +4743,52 @@
                 // Also update the main voice response area with the summary
                 const voiceResponseContent = document.getElementById('voiceResponseContent');
                 if (voiceResponseContent && window.currentSummaryContent.length > 10) {
+                    // Always hide the summary widget/section in the voice tab
+                    const summarySection = document.getElementById('aiSummarySection');
+                    if (summarySection) summarySection.style.display = 'none';
+                    const summaryContent = document.getElementById('summaryContent');
+                    if (summaryContent) summaryContent.style.display = 'none';
+
                     let summaryDiv = document.getElementById('inlineSummaryBox');
                     if (!summaryDiv) {
                         summaryDiv = document.createElement('div');
                         summaryDiv.id = 'inlineSummaryBox';
                         summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
-                        summaryDiv.innerHTML = '<b>Summary:</b> <span id="inlineSummaryText"></span>';
+                        summaryDiv.innerHTML = '<b id="summaryBoxTitle"></b> <span id="inlineSummaryText"></span> <span id="summaryModelDropdownContainer"></span>';
                         voiceResponseContent.appendChild(summaryDiv);
                     }
                     const inlineSummaryText = document.getElementById('inlineSummaryText');
-                    if (inlineSummaryText) {
+                    const summaryBoxTitle = document.getElementById('summaryBoxTitle');
+                    if (inlineSummaryText && summaryBoxTitle) {
+                        // Use the model name from the last summary event if available
+                        const summaryModel = (window.lastSummaryModel || '');
+                        summaryBoxTitle.textContent = summaryModel ? `Summary (by ${summaryModel}):` : 'Summary:';
                         inlineSummaryText.textContent = window.currentSummaryContent;
+                    }
+                    // Always show dropdown for summary model selection
+                    const dropdownContainer = document.getElementById('summaryModelDropdownContainer');
+                    if (dropdownContainer) {
+                        dropdownContainer.innerHTML = '';
+                        const dropdown = document.createElement('select');
+                        dropdown.id = 'summaryModelDropdown';
+                        dropdown.style.marginLeft = '16px';
+                        // Populate with available models
+                        if (window.modelsWithInfo && window.modelsWithInfo.length > 0) {
+                            window.modelsWithInfo.forEach(modelInfo => {
+                                const opt = document.createElement('option');
+                                opt.value = modelInfo.name;
+                                opt.textContent = modelInfo.name;
+                                if (window.lastSummaryModel && window.lastSummaryModel === modelInfo.name) {
+                                    opt.selected = true;
+                                }
+                                dropdown.appendChild(opt);
+                            });
+                        }
+                        dropdown.title = 'Pick a model to regenerate summary';
+                        dropdown.addEventListener('change', function() {
+                            regenerateSummaryWithModel(dropdown.value);
+                        });
+                        dropdownContainer.appendChild(dropdown);
                     }
                 }
                 if (summaryContent) {
