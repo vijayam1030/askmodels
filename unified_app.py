@@ -9,6 +9,8 @@ import json
 import requests
 import random
 import calendar
+import os
+import base64
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from flask import Flask, render_template, request, jsonify, Response
@@ -28,6 +30,12 @@ from models import (
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'unified-secret-key-here'
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Create upload directory if it doesn't exist
+import os
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Enable CORS for all origins to support multiple UI implementations
 CORS(app, origins=["http://localhost:3000", "http://localhost:8501", "http://localhost:7860", "http://localhost:5000"])
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -1917,6 +1925,346 @@ def start_dashboard_background_updates():
     update_thread.start()
     print("📊 Dashboard background updates started")
 
+
+# ========== IMAGE PROCESSING ENDPOINTS ==========
+
+@socketio.on('process_images')
+def handle_image_processing(data):
+    """Handle image processing with OCR and AI explanation."""
+    print("=" * 60)
+    print("🚀 handle_image_processing CALLED!")
+    print(f"🔍 Raw data received: {type(data)}")
+    print(f"🔍 Data keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+    print("=" * 60)
+    
+    session_id = data.get('session_id') or request.sid
+    images_data = data.get('images', [])
+    model_name = data.get('model')
+    
+    print("🔍 handle_image_processing called")
+    print(f"🔍 Session ID from data: {data.get('session_id')}")
+    print(f"🔍 Request SID: {request.sid}")
+    print(f"🔍 Final session_id: {session_id}")
+    print(f"🔍 Images data type: {type(images_data)}")
+    print(f"🔍 Images data length: {len(images_data) if images_data else 0}")
+    print(f"🔍 Model name: {model_name}")
+    
+    try:
+        if not images_data:
+            socketio.emit('error', {
+                'message': 'No images provided for processing',
+                'session_id': session_id
+            }, room=session_id)
+            return
+            
+        if not model_name:
+            socketio.emit('error', {
+                'message': 'No model selected for processing',
+                'session_id': session_id
+            }, room=session_id)
+            return
+        
+        print(f"🖼️  Processing {len(images_data)} images with model: {model_name}")
+        
+        # Emit processing started
+        socketio.emit('image_processing_started', {
+            'session_id': session_id,
+            'image_count': len(images_data)
+        }, room=session_id)
+        
+        extracted_texts = []
+        
+        # Process each image
+        for i, image_data in enumerate(images_data):
+            try:
+                filename = image_data.get('filename', f'image_{i+1}')
+                file_data = image_data.get('data', '')
+                
+                print(f"🔍 Processing image {i+1}/{len(images_data)}: {filename}")
+                print(f"🔍 Raw data length: {len(file_data)}")
+                print(f"🔍 Data preview: {file_data[:50]}...")
+                
+                # Save base64 image data to file
+                if file_data:
+                    # Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
+                    if ',' in file_data:
+                        file_data = file_data.split(',')[1]
+                        print(f"🔍 Removed data URL prefix, new length: {len(file_data)}")
+                    
+                    # Clean and validate base64 data
+                    file_data = file_data.strip()
+                    print(f"🔍 After strip, length: {len(file_data)}")
+                    
+                    # Add padding if necessary (base64 strings must be multiple of 4)
+                    missing_padding = len(file_data) % 4
+                    if missing_padding:
+                        file_data += '=' * (4 - missing_padding)
+                        print(f"🔍 Added {4 - missing_padding} padding chars")
+                    
+                    # Decode base64 and save to uploads folder
+                    try:
+                        # Validate base64 format
+                        if len(file_data) < 10:  # Minimum reasonable image size
+                            raise ValueError(f"Base64 data too short: {len(file_data)} characters")
+                        
+                        print(f"🔍 Attempting base64 decode...")
+                        image_bytes = base64.b64decode(file_data, validate=True)
+                        print(f"🔍 Successfully decoded {len(image_bytes)} bytes")
+                        
+                        # Validate it's actually image data (minimum size check)
+                        if len(image_bytes) < 100:  # Very small images are likely invalid
+                            raise ValueError(f"Decoded image data too small: {len(image_bytes)} bytes")
+                        
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        print(f"🔍 Saving to: {file_path}")
+                        
+                        with open(file_path, 'wb') as f:
+                            f.write(image_bytes)
+                        
+                        print(f"💾 Saved image: {file_path} ({len(image_bytes)} bytes)")
+                        
+                        # Verify file was saved
+                        if os.path.exists(file_path):
+                            actual_size = os.path.getsize(file_path)
+                            print(f"✅ File verified: {actual_size} bytes on disk")
+                        else:
+                            print(f"❌ File not found after save!")
+                        
+                        # Now extract text using OCR
+                        extracted_text = simulate_ocr_extraction(filename)
+                        
+                    except ValueError as e:
+                        print(f"❌ Invalid base64 data for {filename}: {e}")
+                        extracted_text = f"Error: Invalid image data for {filename} - {str(e)}"
+                    except Exception as e:
+                        print(f"❌ Error saving/processing image {filename}: {e}")
+                        extracted_text = f"Error processing {filename}: {str(e)}"
+                else:
+                    print(f"❌ No image data received for {filename}")
+                    extracted_text = f"No image data received for {filename}"
+                
+                extracted_texts.append({
+                    'filename': filename,
+                    'text': extracted_text
+                })
+                
+                # Emit progress update
+                socketio.emit('image_processed', {
+                    'session_id': session_id,
+                    'filename': filename,
+                    'text': extracted_text,
+                    'progress': i + 1,
+                    'total': len(images_data)
+                }, room=session_id)
+                
+            except Exception as e:
+                print(f"❌ Error processing image {filename}: {e}")
+                extracted_texts.append({
+                    'filename': filename,
+                    'text': f"Error extracting text from {filename}: {str(e)}"
+                })
+        
+        # Combine all extracted text
+        all_text = '\n\n'.join([f"=== {item['filename']} ===\n{item['text']}" for item in extracted_texts])
+        
+        # Emit OCR completion with extracted text for user to see
+        socketio.emit('ocr_completed', {
+            'session_id': session_id,
+            'extracted_texts': extracted_texts,
+            'combined_text': all_text,
+            'total_files': len(extracted_texts)
+        }, room=session_id)
+        
+        print(f"📝 OCR completed for {len(extracted_texts)} images. Combined text length: {len(all_text)} characters")
+        
+        if all_text.strip():
+            # Wait a moment for user to see the extracted text
+            time.sleep(2)
+            
+            # Create prompt for AI analysis
+            prompt = f"""Please analyze and explain all the code found in the following text extracted from images. Provide detailed explanations of:
+
+1. What each piece of code does
+2. Programming languages used
+3. Key functions and logic
+4. Potential improvements or issues
+5. Overall purpose and structure
+
+Extracted text from images:
+{all_text}
+
+Please format your response clearly with headers and explanations for each code section found."""
+            
+            # Process with AI model
+            socketio.emit('model_started', {
+                'model': model_name,
+                'session_id': session_id
+            }, room=session_id)
+            
+            print(f"🤖 Starting AI explanation with model: {model_name}")
+            
+            # Get AI explanation using threading to handle async
+            import threading
+            def run_ai_explanation():
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(process_image_ai_explanation(prompt, model_name, session_id))
+                    loop.close()
+                except Exception as e:
+                    print(f"❌ Error in AI explanation thread: {e}")
+                    socketio.emit('response_received', {
+                        'model': model_name,
+                        'error': str(e),
+                        'session_id': session_id
+                    }, room=session_id)
+            
+            ai_thread = threading.Thread(target=run_ai_explanation, daemon=True)
+            ai_thread.start()
+        else:
+            socketio.emit('error', {
+                'message': 'No text could be extracted from the images',
+                'session_id': session_id
+            }, room=session_id)
+            
+    except Exception as e:
+        print(f"❌ Error during image processing: {e}")
+        socketio.emit('error', {
+            'message': f'Error processing images: {str(e)}',
+            'session_id': session_id
+        }, room=session_id)
+
+def simulate_ocr_extraction(filename):
+    """Extract text from image using OCR (Tesseract)."""
+    try:
+        import pytesseract
+        from PIL import Image
+        import os
+        import platform
+        
+        # Configure tesseract path for Windows if needed
+        if platform.system() == 'Windows':
+            # Common Windows installation paths for Tesseract
+            possible_paths = [
+                r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+                r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+                'tesseract'  # If it's in PATH
+            ]
+            
+            for path in possible_paths:
+                try:
+                    pytesseract.pytesseract.tesseract_cmd = path
+                    # Skip version check, just set the path
+                    print(f"🔍 Set Tesseract path to: {path}")
+                    break
+                except Exception:
+                    continue
+        
+        # Full path to the uploaded image
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        if not os.path.exists(file_path):
+            print(f"❌ Image file not found: {file_path}")
+            return f"Error: Image file {filename} not found"
+        
+        print(f"🔍 Processing OCR for: {file_path}")
+        print(f"🔍 File exists: {os.path.exists(file_path)}")
+        if os.path.exists(file_path):
+            print(f"🔍 File size: {os.path.getsize(file_path)} bytes")
+        
+        # Open and process the image
+        with Image.open(file_path) as image:
+            print(f"🔍 Image opened: {image.size} pixels, mode: {image.mode}")
+            # Convert to RGB if necessary (for better OCR results)
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+                print(f"🔍 Converted to RGB mode")
+            
+            # Extract text using pytesseract
+            print(f"🔍 Starting Tesseract OCR...")
+            extracted_text = pytesseract.image_to_string(image)
+            print(f"🔍 Tesseract finished. Raw result length: {len(extracted_text)}")
+            
+            print(f"✅ OCR completed for {filename}. Extracted {len(extracted_text)} characters")
+            if extracted_text.strip():
+                print(f"🔍 Preview: {extracted_text.strip()[:100]}...")
+            
+            if not extracted_text.strip():
+                return f"// No text detected in {filename} - this may be an image without readable text"
+            
+            return f"// Text extracted from {filename}:\n{extracted_text.strip()}"
+            
+    except ImportError as e:
+        print(f"❌ OCR dependencies not available: {e}")
+        return f"// OCR Error: Missing dependencies - {str(e)}"
+    except Exception as e:
+        print(f"❌ OCR processing error for {filename}: {e}")
+        return f"// OCR Error for {filename}: {str(e)}"
+
+async def process_image_ai_explanation(prompt, model_name, session_id):
+    """Process the extracted text with AI for code explanation."""
+    try:
+        async def streaming_callback(model_name, chunk, is_complete):
+            # Only emit chunks that contain actual content
+            if not is_complete and chunk:
+                print(f"📡 Streaming chunk from {model_name}: {chunk[:50]}..." if len(chunk) > 50 else f"📡 Streaming chunk from {model_name}: {chunk}")
+                print(f"🔍 Emitting chunk_received to session: {session_id}")
+                socketio.emit('chunk_received', {
+                    'model': model_name,
+                    'chunk': chunk,
+                    'session_id': session_id
+                }, room=session_id)
+            elif is_complete:
+                print(f"✅ Streaming completed for {model_name}")
+                print(f"🔍 Emitting to session: {session_id}")
+        
+        # Get AI response using the model manager with streaming
+        start_time = time.time()
+        
+        print(f"🔍 Calling query_model_streaming for {model_name}")
+        response = await model_manager.query_model_streaming(
+            model_name,
+            prompt,
+            callback=streaming_callback
+        )
+        
+        print(f"🔍 Response received: {type(response)}, is_none: {response is None}")
+        
+        # Handle case where response is None
+        if response is None:
+            print(f"❌ query_model_streaming returned None for {model_name}")
+            raise ValueError(f"Model {model_name} returned no response - possibly not available or had an error")
+        
+        elapsed_time = time.time() - start_time
+        
+        # Emit completion
+        socketio.emit('model_completed', {
+            'model': model_name,
+            'session_id': session_id,
+            'elapsed_time': elapsed_time
+        }, room=session_id)
+        
+        if response.is_successful():
+            socketio.emit('response_received', {
+                'model': model_name,
+                'response': response.response,
+                'response_time': f"{elapsed_time:.2f}s",
+                'session_id': session_id
+            }, room=session_id)
+        else:
+            socketio.emit('response_received', {
+                'model': model_name,
+                'error': response.error,
+                'session_id': session_id
+            }, room=session_id)
+        
+    except Exception as e:
+        print(f"❌ Error getting AI explanation: {e}")
+        socketio.emit('response_received', {
+            'model': model_name,
+            'error': str(e),
+            'session_id': session_id
+        }, room=session_id)
 
 # ========== MAIN APPLICATION ==========
 

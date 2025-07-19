@@ -1997,6 +1997,60 @@
             padding-bottom: 5px;
         }
 
+        .ocr-completed {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .ocr-completed h4 {
+            color: #28a745;
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+        }
+
+        .extraction-summary {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .extraction-summary p {
+            margin: 5px 0;
+        }
+
+        .extracted-text-preview {
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+        }
+
+        .extracted-text-preview h5 {
+            background: #e9ecef;
+            margin: 0;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .text-preview {
+            margin: 0;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.4;
+            background: #fafafa;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
         /* Hidden sections */
         .voice-response-section:not(.show),
         .extraction-section:not(.show),
@@ -2007,7 +2061,7 @@
         .voice-response-section.show,
         .extraction-section.show,
         .explanation-section.show {
-            display: block;
+            display: block !important;
         }
     </style>
 </head>
@@ -2430,6 +2484,7 @@
             document.getElementById(`${tabName}-tab`).classList.add('active');
             
             activeTab = tabName;
+            console.log('🔄 Tab switched to:', activeTab);
             
             // Clear any active processes
             if (tabName === 'qa') {
@@ -2503,9 +2558,24 @@
             }, 100);
         });
 
+        // ========== SOCKET CONNECTION AND DEBUGGING ==========
+        socket.on('connect', () => {
+            console.log('🔌 Socket connected successfully');
+            sessionId = socket.id;
+            console.log('🆔 Session ID:', sessionId);
+        });
+
+        socket.on('connected', (data) => {
+            console.log('🔌 Connected event received:', data);
+            sessionId = data.session_id;
+            console.log('🆔 Updated Session ID:', sessionId);
+        });
+
         // ========== Q&A MODE EVENTS ==========
         socket.on('model_started', (data) => {
+            console.log('🤖 Model started event received:', data);
             if (data.session_id === sessionId) {
+                console.log('🔍 Active tab:', activeTab);
                 if (activeTab === 'qa') {
                     createOrUpdateResponseCard(data.model, 'processing', '');
                     responseControls.style.display = 'block';
@@ -2516,17 +2586,40 @@
                         responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${data.model}...`;
                     }
                 } else if (activeTab === 'image') {
-                    // Update image response status
+                    console.log('🔍 Handling image tab model_started');
+                    // Update image response status and show explanation section
+                    const explanationSection = document.getElementById('explanationSection');
                     const explanationMeta = document.getElementById('explanationMeta');
+                    const explanationContent = document.getElementById('explanationContent');
+                    
+                    console.log('🔍 explanationSection:', explanationSection);
+                    console.log('🔍 explanationMeta:', explanationMeta);
+                    console.log('🔍 explanationContent:', explanationContent);
+                    
+                    if (explanationSection) {
+                        explanationSection.classList.add('show');
+                        console.log('✅ Added show class to explanationSection');
+                    }
+                    
                     if (explanationMeta) {
                         explanationMeta.innerHTML = `<span class="status-indicator status-loading"></span>Analyzing code with ${data.model}...`;
+                        console.log('✅ Updated explanationMeta');
+                    }
+                    
+                    if (explanationContent) {
+                        explanationContent.innerHTML = '<div class="loading">🧠 AI is analyzing your code...</div>';
+                        console.log('✅ Updated explanationContent with loading message');
                     }
                 }
+            } else {
+                console.log('❌ Session ID mismatch:', data.session_id, 'vs', sessionId);
             }
         });
 
         socket.on('chunk_received', (data) => {
+            console.log('📡 Chunk received event:', data);
             if (data.session_id === sessionId) {
+                console.log('🔍 Active tab for chunk:', activeTab);
                 if (activeTab === 'qa') {
                     appendToResponse(data.model, data.chunk);
                 } else if (activeTab === 'voice') {
@@ -2544,20 +2637,40 @@
                         }
                     }
                 } else if (activeTab === 'image') {
+                    console.log('🔍 Handling image tab chunk_received');
                     // Handle image streaming
+                    const explanationSection = document.getElementById('explanationSection');
                     const explanationContent = document.getElementById('explanationContent');
-                    if (explanationContent) {
-                        let currentContent = explanationContent.innerHTML;
-                        if (currentContent.includes('AI is analyzing')) {
+                    console.log('🔍 explanationSection for chunk:', explanationSection);
+                    console.log('🔍 explanationContent for chunk:', explanationContent);
+                    
+                    if (explanationSection && explanationContent) {
+                        // Force show the explanation section
+                        explanationSection.style.display = '';  // Remove inline style
+                        explanationSection.classList.add('show');
+                        console.log('✅ Made explanationSection visible');
+                        
+                        // Check if we already have a response-text div for streaming
+                        let responseText = explanationContent.querySelector('.response-text');
+                        console.log('🔍 Existing responseText:', responseText);
+                        if (!responseText) {
+                            // First chunk - create the response container
                             explanationContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                            console.log('✅ Created new response-text div with first chunk');
                         } else {
-                            const responseText = explanationContent.querySelector('.response-text');
-                            if (responseText) {
-                                responseText.innerHTML += data.chunk;
-                            }
+                            // Subsequent chunks - append to existing content
+                            responseText.innerHTML += data.chunk;
+                            console.log('✅ Appended chunk to existing response-text');
                         }
+                        
+                        // Auto-scroll to bottom
+                        explanationContent.scrollTop = explanationContent.scrollHeight;
+                    } else {
+                        console.error('❌ explanationSection or explanationContent not found for chunk!');
                     }
                 }
+            } else {
+                console.log('❌ Chunk session ID mismatch:', data.session_id, 'vs', sessionId);
             }
         });
 
@@ -2991,6 +3104,84 @@
                 
                 // Re-enable model selection after error
                 reEnableDebateModelSelection('[ERROR]');
+            }
+        });
+
+        // ========== IMAGE PROCESSING EVENTS ==========
+        socket.on('image_processing_started', (data) => {
+            if (data.session_id === sessionId && activeTab === 'image') {
+                console.log('Image processing started:', data);
+                const extractionContent = document.getElementById('extractionContent');
+                if (extractionContent) {
+                    extractionContent.innerHTML = `<div class="loading">🔍 Processing ${data.image_count} images...</div>`;
+                }
+            }
+        });
+
+        socket.on('image_processed', (data) => {
+            if (data.session_id === sessionId && activeTab === 'image') {
+                console.log('Image processed:', data);
+                
+                // Add to extracted texts
+                extractedTexts.push({
+                    filename: data.filename,
+                    text: data.text
+                });
+                
+                // Update display
+                updateExtractionDisplay();
+                
+                // Update progress if needed
+                const extractionContent = document.getElementById('extractionContent');
+                if (data.progress < data.total) {
+                    const progressDiv = extractionContent.querySelector('.loading');
+                    if (progressDiv) {
+                        progressDiv.innerHTML = `🔍 Processing images... (${data.progress}/${data.total})`;
+                    }
+                }
+            }
+        });
+
+        socket.on('ocr_completed', (data) => {
+            console.log('🔍 OCR completed event received:', data);
+            if (data.session_id === sessionId && activeTab === 'image') {
+                console.log('OCR completed:', data);
+                
+                // Show extracted text summary
+                const extractionContent = document.getElementById('extractionContent');
+                console.log('🔍 extractionContent element:', extractionContent);
+                if (extractionContent) {
+                    extractionContent.innerHTML = `
+                        <div class="ocr-completed">
+                            <h4>📝 Text Extracted from ${data.total_files} Image(s)</h4>
+                            <div class="extraction-summary">
+                                <p><strong>Total characters extracted:</strong> ${data.combined_text.length}</p>
+                                <p><strong>Ready for AI analysis...</strong></p>
+                            </div>
+                            <div class="extracted-text-preview">
+                                <h5>Preview of extracted text:</h5>
+                                <pre class="text-preview">${data.combined_text.length > 500 ? data.combined_text.substring(0, 500) + '...' : data.combined_text}</pre>
+                            </div>
+                        </div>
+                    `;
+                    console.log('✅ OCR content updated in UI');
+                } else {
+                    console.error('❌ extractionContent element not found!');
+                }
+                
+                // Prepare explanation section for AI analysis
+                const explanationSection = document.getElementById('explanationSection');
+                const explanationContent = document.getElementById('explanationContent');
+                if (explanationSection && explanationContent) {
+                    explanationSection.style.display = '';  // Remove inline style
+                    explanationSection.classList.add('show');
+                    explanationContent.innerHTML = '<div class="ai-status">🤖 AI is analyzing your images...</div>';
+                    console.log('✅ Prepared explanation section for AI streaming');
+                }
+                
+                // Update the extracted texts array
+                extractedTexts = data.extracted_texts;
+                updateExtractionDisplay();
             }
         });
 
@@ -4054,6 +4245,7 @@
             // Filter for coding models only
             if (window.modelsWithInfo && window.modelsWithInfo.length > 0) {
                 const codingModels = window.modelsWithInfo.filter(model => model.is_coding);
+                
                 codingModels.forEach(modelInfo => {
                     const option = document.createElement('option');
                     option.value = modelInfo.name;
@@ -4064,9 +4256,21 @@
         }
 
         function setupImageEventListeners() {
-            document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
-            document.getElementById('clearImagesBtn').addEventListener('click', clearImages);
-            document.getElementById('processImagesBtn').addEventListener('click', processImages);
+            const imageUpload = document.getElementById('imageUpload');
+            const clearImagesBtn = document.getElementById('clearImagesBtn');
+            const processImagesBtn = document.getElementById('processImagesBtn');
+            
+            if (imageUpload) {
+                imageUpload.addEventListener('change', handleImageUpload);
+            }
+            
+            if (clearImagesBtn) {
+                clearImagesBtn.addEventListener('click', clearImages);
+            }
+            
+            if (processImagesBtn) {
+                processImagesBtn.addEventListener('click', processImages);
+            }
         }
 
         function handleImageUpload(event) {
@@ -4135,11 +4339,19 @@
             const processBtn = document.getElementById('processImagesBtn');
             const modelSelected = document.getElementById('imageModelSelect').value;
             
-            processBtn.disabled = selectedImages.length === 0 || !modelSelected;
+            const shouldDisable = selectedImages.length === 0 || !modelSelected;
+            
+            if (processBtn) {
+                processBtn.disabled = shouldDisable;
+            }
         }
 
         function processImages() {
+            console.log('🔍 processImages() called');
             const selectedModel = document.getElementById('imageModelSelect').value;
+            console.log('🔍 Selected model:', selectedModel);
+            console.log('🔍 Selected images count:', selectedImages.length);
+            console.log('🔍 Active tab when processing:', activeTab);
             
             if (selectedImages.length === 0) {
                 alert('Please select images first');
@@ -4155,68 +4367,73 @@
             const extractionSection = document.getElementById('extractionSection');
             const extractionContent = document.getElementById('extractionContent');
             
-            extractionSection.classList.add('show');
-            extractionContent.innerHTML = '<div class="loading">🔍 Extracting text from images...</div>';
+            console.log('🔍 extractionSection:', extractionSection);
+            console.log('🔍 extractionContent:', extractionContent);
+            
+            if (extractionSection) {
+                extractionSection.classList.add('show');
+                console.log('✅ Added show class to extractionSection');
+            }
+            
+            if (extractionContent) {
+                extractionContent.innerHTML = '<div class="loading">🔍 Extracting text from images...</div>';
+                console.log('✅ Set extractionContent to loading state');
+            }
             
             // Process each image
             processImagesSequentially(0, selectedModel);
         }
 
         function processImagesSequentially(index, model) {
-            if (index >= selectedImages.length) {
-                // All images processed, now get AI explanation
-                const allText = extractedTexts.join('\n\n');
-                if (allText.trim()) {
-                    getCodeExplanation(allText, model);
-                }
-                return;
-            }
+            console.log('processImagesSequentially called with index:', index, 'model:', model);
+            console.log('🔍 Converting images to base64 and sending to backend...');
             
-            const file = selectedImages[index];
+            // Convert images to base64 for backend processing
+            const imagePromises = selectedImages.map((file, idx) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        console.log(`✅ Converted ${file.name} to base64 (${e.target.result.length} chars)`);
+                        resolve({
+                            filename: file.name,
+                            size: file.size,
+                            type: file.type,
+                            data: e.target.result // This will be base64 data URL
+                        });
+                    };
+                    reader.onerror = function(e) {
+                        console.error('❌ Error reading file:', file.name, e);
+                        reject(new Error(`Failed to read file: ${file.name}`));
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
             
-            // Use OCR API or library to extract text
-            // For now, we'll simulate the extraction
-            extractTextFromImage(file).then(extractedText => {
-                extractedTexts.push({
-                    filename: file.name,
-                    text: extractedText
+            // Wait for all images to be converted to base64
+            Promise.all(imagePromises)
+                .then(imagesData => {
+                    console.log('🔍 All images converted to base64, sending to backend:', imagesData.length, 'images');
+                    console.log('🔍 First image data preview:', imagesData[0]?.data?.substring(0, 100) + '...');
+                    console.log('🔍 Using session ID:', sessionId);
+                    console.log('🔍 Using model:', model);
+                    
+                    // Send to backend for processing
+                    socket.emit('process_images', {
+                        session_id: sessionId,
+                        images: imagesData,
+                        model: model
+                    });
+                })
+                .catch(error => {
+                    console.error('❌ Error converting images to base64:', error);
+                    alert('Error preparing images for processing: ' + error.message);
+                    
+                    // Reset UI state
+                    const extractionContent = document.getElementById('extractionContent');
+                    if (extractionContent) {
+                        extractionContent.innerHTML = '<div class="error-message">Error preparing images: ' + error.message + '</div>';
+                    }
                 });
-                
-                updateExtractionDisplay();
-                
-                // Process next image
-                processImagesSequentially(index + 1, model);
-            }).catch(error => {
-                console.error('Error extracting text from image:', error);
-                extractedTexts.push({
-                    filename: file.name,
-                    text: `Error extracting text from ${file.name}: ${error.message}`
-                });
-                
-                updateExtractionDisplay();
-                processImagesSequentially(index + 1, model);
-            });
-        }
-
-        function extractTextFromImage(file) {
-            return new Promise((resolve, reject) => {
-                // Here you would typically use an OCR library like Tesseract.js
-                // For demo purposes, we'll simulate text extraction
-                
-                // Check if Tesseract is available (you'd need to include the library)
-                if (typeof Tesseract !== 'undefined') {
-                    Tesseract.recognize(file, 'eng', {
-                        logger: m => console.log(m)
-                    }).then(({ data: { text } }) => {
-                        resolve(text);
-                    }).catch(reject);
-                } else {
-                    // Fallback: simulate OCR for demo
-                    setTimeout(() => {
-                        resolve(`[Simulated OCR text extraction from ${file.name}]\n\nThis is a placeholder for actual OCR text extraction.\nYou would need to integrate with an OCR service or library like Tesseract.js\nto extract real text from the uploaded images.\n\n// Example code that might be found in images:\nfunction example() {\n    console.log("Hello, World!");\n    return true;\n}`);
-                    }, 1000);
-                }
-            });
         }
 
         function updateExtractionDisplay() {
@@ -4238,36 +4455,6 @@
             });
             
             extractionContent.innerHTML = html;
-        }
-
-        function getCodeExplanation(allText, model) {
-            const explanationSection = document.getElementById('explanationSection');
-            const explanationMeta = document.getElementById('explanationMeta');
-            const explanationContent = document.getElementById('explanationContent');
-            
-            explanationSection.classList.add('show');
-            explanationMeta.innerHTML = `<span class="status-indicator status-loading"></span>Analyzing code with ${model}...`;
-            explanationContent.innerHTML = '<div class="loading">🤖 AI is analyzing the extracted code...</div>';
-            
-            // Create a comprehensive prompt for code explanation
-            const prompt = `Please analyze and explain all the code found in the following text extracted from images. Provide detailed explanations of:
-
-1. What each piece of code does
-2. Programming languages used
-3. Key functions and logic
-4. Potential improvements or issues
-5. Overall purpose and structure
-
-Extracted text:
-${allText}
-
-Please format your response clearly with headers and explanations for each code section found.`;
-            
-            // Send to backend for processing
-            socket.emit('ask_llm', {
-                question: prompt,
-                model: model
-            });
         }
 
         // Listen for model selection changes to update process button
