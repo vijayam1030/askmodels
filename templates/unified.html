@@ -1808,6 +1808,226 @@
             background: #f8fff8;
         }
 
+        /* Unified Input Section Styles */
+        .unified-input-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 2px solid #e3f2fd;
+        }
+
+        .unified-input-section h3 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .unified-textarea {
+            width: 100%;
+            min-height: 150px;
+            max-height: 400px;
+            padding: 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+            box-sizing: border-box;
+        }
+
+        .unified-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .unified-textarea::placeholder {
+            color: #8899a6;
+            line-height: 1.6;
+        }
+
+        .input-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .voice-recording-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .voice-add-btn, .voice-stop-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-add-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .voice-add-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .voice-stop-btn {
+            background: linear-gradient(135deg, #f44336, #da190b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .voice-stop-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        .voice-add-btn:disabled, .voice-stop-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .voice-status-mini {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: #e3f2fd;
+            color: #1976d2;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #bbdefb;
+        }
+
+        .voice-status-mini.recording {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #ffcdd2;
+            animation: pulse 1.5s infinite;
+        }
+
+        .submit-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e8ed;
+        }
+
+        .submit-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .submit-btn, .clear-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        }
+
+        /* Live Transcription Section */
+        .live-transcription-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+            display: none;
+        }
+
+        .live-transcription-section.show {
+            display: block;
+            animation: slideInDown 0.3s ease;
+        }
+
+        .live-transcription-section h4 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .live-transcription {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+            min-height: 50px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .live-transcription.listening {
+            border-color: #28a745;
+            background: #f8fff9;
+            animation: breathe 2s infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         /* Edit & Submit Section Styles */
         .edit-submit-section {
             margin-bottom: 20px;
@@ -2631,41 +2851,43 @@
                                 <option value="">Choose a model...</option>
                             </select>
                         </div>
+                    </div>
+                    
+                    <div class="unified-input-section">
+                        <h3>📝 Type & Speak</h3>
+                        <div class="input-area">
+                            <textarea id="unifiedTextInput" class="unified-textarea" 
+                                placeholder="Type your message here or use voice recording to add speech...&#10;&#10;You can:&#10;• Type your complete message&#10;• Add voice input at any time&#10;• Mix typing and speaking&#10;• Submit when ready"></textarea>
+                        </div>
                         
-                        <div class="recording-controls">
-                            <button id="startRecordingBtn" class="recording-btn start">🎤 Start Recording</button>
-                            <button id="stopRecordingBtn" class="recording-btn stop" disabled>⏹️ Stop Recording</button>
-                            <button id="clearVoiceBtn" class="recording-btn clear">🗑️ Clear</button>
-                        </div>
-                    </div>
-                    
-                    <div class="voice-status" id="voiceStatus">
-                        <span class="status-indicator">🔴</span>
-                        <span class="status-text">Ready to record</span>
-                    </div>
-                    
-                    <div class="transcription-section">
-                        <h3>📝 Live Transcription</h3>
-                        <div class="transcription-area" id="transcriptionArea">
-                            <div class="no-transcription">Click "Start Recording" to begin transcribing your speech...</div>
-                        </div>
-                    </div>
-                    
-                    <div class="edit-submit-section" id="editSubmitSection" style="display: none;">
-                        <h3>✏️ Edit & Submit</h3>
-                        <div class="edit-controls">
-                            <textarea id="editableText" class="editable-textarea" placeholder="Edit your transcribed text here before submitting for AI analysis..."></textarea>
-                            <div class="text-stats" id="textStats">
+                        <div class="input-controls">
+                            <div class="voice-recording-controls">
+                                <button id="addVoiceBtn" class="voice-add-btn">🎤 Add Voice</button>
+                                <button id="stopVoiceBtn" class="voice-stop-btn" disabled>⏹️ Stop Voice</button>
+                                <span class="voice-status-mini" id="voiceStatusMini">Ready</span>
+                            </div>
+                            
+                            <div class="text-stats" id="unifiedTextStats">
                                 <span class="char-count">0 characters</span> • 
                                 <span class="word-count">0 words</span>
                             </div>
+                        </div>
+                        
+                        <div class="submit-section">
                             <div class="keyboard-hints">
-                                <small>💡 Tip: Press <kbd>Ctrl+Enter</kbd> to submit, <kbd>Esc</kbd> to cancel</small>
+                                <small>💡 Tips: Type freely, add voice anytime, press <kbd>Ctrl+Enter</kbd> to submit</small>
                             </div>
                             <div class="submit-controls">
-                                <button id="submitForAnalysis" class="submit-btn">🚀 Submit for Analysis</button>
-                                <button id="cancelEdit" class="cancel-edit-btn">❌ Cancel</button>
+                                <button id="submitUnifiedInput" class="submit-btn">🚀 Submit for Analysis</button>
+                                <button id="clearUnifiedInput" class="clear-btn">🗑️ Clear All</button>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <div class="live-transcription-section" id="liveTranscriptionSection" style="display: none;">
+                        <h4>🎙️ Live Voice Input</h4>
+                        <div class="live-transcription" id="liveTranscription">
+                            Listening...
                         </div>
                     </div>
                     
@@ -2808,24 +3030,36 @@
         function switchTab(tabName) {
             // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            // Find and activate the clicked button
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                if (btn.onclick && btn.onclick.toString().includes(`'${tabName}'`)) {
+                    btn.classList.add('active');
+                }
+            });
             
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(`${tabName}-tab`).classList.add('active');
+            const targetTab = document.getElementById(`${tabName}-tab`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
             
             activeTab = tabName;
             console.log('🔄 Tab switched to:', activeTab);
             
-            // Clear any active processes
+            // Clear any active processes and initialize tab-specific functionality
             if (tabName === 'qa') {
                 isDebating = false;
-                startDebateBtn.disabled = false;
-                startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                if (typeof startDebateBtn !== 'undefined') {
+                    startDebateBtn.disabled = false;
+                    startDebateBtn.textContent = '🗣️ Start Enhanced Debate';
+                }
             } else if (tabName === 'debate') {
                 isQuerying = false;
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 Query Models';
+                if (typeof submitBtn !== 'undefined') {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '🚀 Query Models';
+                }
             } else if (tabName === 'voice') {
                 // Voice tab initialization
                 isQuerying = false;
@@ -2840,7 +3074,9 @@
                 // Dashboard specific initialization
                 isQuerying = false;
                 isDebating = false;
-                checkDashboardStatus();
+                if (typeof checkDashboardStatus === 'function') {
+                    checkDashboardStatus();
+                }
             }
         }
 
@@ -3043,6 +3279,9 @@
                             console.log('✅ Voice: Applied final formatting to completed response');
                         }
                     }
+                    
+                    // Re-enable submit button after completion
+                    handleVoiceQueryComplete();
                 } else if (activeTab === 'image') {
                     // Update image completion status
                     const explanationMeta = document.getElementById('explanationMeta');
@@ -4555,174 +4794,295 @@
         }
 
         function setupVoiceEventListeners() {
-            document.getElementById('startRecordingBtn').addEventListener('click', startRecording);
-            document.getElementById('stopRecordingBtn').addEventListener('click', stopRecording);
-            document.getElementById('clearVoiceBtn').addEventListener('click', clearVoiceTranscription);
+            // Unified input event listeners
+            document.getElementById('addVoiceBtn').addEventListener('click', addVoiceInput);
+            document.getElementById('stopVoiceBtn').addEventListener('click', stopVoiceInput);
+            document.getElementById('submitUnifiedInput').addEventListener('click', submitUnifiedInput);
+            document.getElementById('clearUnifiedInput').addEventListener('click', clearUnifiedInput);
             
-            // New edit and submit listeners
-            document.getElementById('submitForAnalysis').addEventListener('click', submitForAnalysis);
-            document.getElementById('cancelEdit').addEventListener('click', cancelEdit);
+            // Real-time text stats and submit button state
+            document.getElementById('unifiedTextInput').addEventListener('input', updateUnifiedTextStats);
+            document.getElementById('voiceModelSelect').addEventListener('change', updateUnifiedSubmitButtonState);
             
-            // Update submit button state when text or model changes
-            document.getElementById('editableText').addEventListener('input', updateSubmitButtonState);
-            document.getElementById('voiceModelSelect').addEventListener('change', updateSubmitButtonState);
-            
-            // Keyboard shortcuts for the editable textarea
-            document.getElementById('editableText').addEventListener('keydown', function(e) {
+            // Keyboard shortcuts for the unified textarea
+            document.getElementById('unifiedTextInput').addEventListener('keydown', function(e) {
                 // Ctrl+Enter or Cmd+Enter to submit
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();
-                    if (!document.getElementById('submitForAnalysis').disabled) {
-                        submitForAnalysis();
+                    if (!document.getElementById('submitUnifiedInput').disabled) {
+                        submitUnifiedInput();
                     }
                 }
-                // Escape to cancel
+                
+                // Escape to clear
                 if (e.key === 'Escape') {
-                    e.preventDefault();
-                    cancelEdit();
+                    clearUnifiedInput();
                 }
             });
+            
+            // Initial state update
+            updateUnifiedTextStats();
+            updateUnifiedSubmitButtonState();
         }
 
-        function startRecording() {
+        // Unified voice input functions
+        let isUnifiedRecording = false;
+        let unifiedRecognition = null;
+        let voiceStreamingText = '';
+
+        function addVoiceInput() {
             if (!recognition) {
-                alert('Speech recognition not available');
+                updateVoiceStatusMini('❌ Speech recognition not available');
                 return;
             }
             
-            // Request microphone permission first
+            const unifiedTextInput = document.getElementById('unifiedTextInput');
+            const addVoiceBtn = document.getElementById('addVoiceBtn');
+            const stopVoiceBtn = document.getElementById('stopVoiceBtn');
+            const liveTranscriptionSection = document.getElementById('liveTranscriptionSection');
+            const liveTranscription = document.getElementById('liveTranscription');
+            
+            // Request microphone permissions first
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(function(stream) {
-                    // Permission granted, stop the test stream and start recognition
+                    // Permission granted, close the stream and start recording
                     stream.getTracks().forEach(track => track.stop());
                     
-                    transcribedText = '';
-                    updateTranscriptionDisplay();
+                    // Show live transcription section
+                    liveTranscriptionSection.classList.add('show');
+                    liveTranscription.classList.add('listening');
+                    liveTranscription.textContent = 'Listening... Speak now!';
+                    
+                    // Update button states
+                    addVoiceBtn.disabled = true;
+                    stopVoiceBtn.disabled = false;
+                    updateVoiceStatusMini('🎙️ Recording', 'recording');
+                    
+                    // Store cursor position in textarea
+                    const cursorPosition = unifiedTextInput.selectionStart;
+                    
+                    // Start recognition
+                    isUnifiedRecording = true;
                     recognition.start();
+                    
+                    // Handle recognition results for unified input
+                    recognition.onresult = function(event) {
+                        let finalTranscript = '';
+                        let interimTranscript = '';
+                        
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcript = event.results[i][0].transcript;
+                            
+                            if (event.results[i].isFinal) {
+                                finalTranscript += transcript;
+                            } else {
+                                interimTranscript += transcript;
+                            }
+                        }
+                        
+                        // Update live transcription display
+                        const currentLiveText = finalTranscript + interimTranscript;
+                        if (currentLiveText.trim()) {
+                            liveTranscription.textContent = currentLiveText;
+                            liveTranscription.classList.remove('listening');
+                        }
+                        
+                        // Add final transcript to textarea at cursor position
+                        if (finalTranscript) {
+                            const currentText = unifiedTextInput.value;
+                            const beforeCursor = currentText.substring(0, cursorPosition);
+                            const afterCursor = currentText.substring(cursorPosition);
+                            
+                            // Add space before if there's text before cursor and it doesn't end with space
+                            const prefix = (beforeCursor && !beforeCursor.endsWith(' ') && !beforeCursor.endsWith('\n')) ? ' ' : '';
+                            
+                            // Add space after if there's text after cursor and finalTranscript doesn't end with space
+                            const suffix = (afterCursor && !finalTranscript.endsWith(' ') && !afterCursor.startsWith(' ')) ? ' ' : '';
+                            
+                            const newText = beforeCursor + prefix + finalTranscript + suffix + afterCursor;
+                            unifiedTextInput.value = newText;
+                            
+                            // Update cursor position
+                            const newCursorPos = cursorPosition + prefix.length + finalTranscript.length + suffix.length;
+                            unifiedTextInput.setSelectionRange(newCursorPos, newCursorPos);
+                            unifiedTextInput.focus();
+                            
+                            // Update stats
+                            updateUnifiedTextStats();
+                            updateUnifiedSubmitButtonState();
+                        }
+                    };
+                    
+                    recognition.onerror = function(event) {
+                        console.error('Speech recognition error:', event.error);
+                        let errorMessage = '';
+                        switch(event.error) {
+                            case 'not-allowed':
+                                errorMessage = '❌ Microphone access denied';
+                                break;
+                            case 'no-speech':
+                                errorMessage = '⚠️ No speech detected';
+                                break;
+                            case 'audio-capture':
+                                errorMessage = '❌ Audio capture failed';
+                                break;
+                            case 'network':
+                                errorMessage = '❌ Network error';
+                                break;
+                            default:
+                                errorMessage = `❌ Error: ${event.error}`;
+                        }
+                        updateVoiceStatusMini(errorMessage);
+                        resetUnifiedRecordingState();
+                    };
+                    
+                    recognition.onend = function() {
+                        console.log('Unified voice recognition ended');
+                        resetUnifiedRecordingState();
+                    };
                 })
                 .catch(function(error) {
                     console.error('Microphone permission error:', error);
                     if (error.name === 'NotAllowedError') {
-                        updateVoiceStatus('❌', 'Microphone access denied. Please allow microphone permissions and try again.');
-                        alert('Microphone access is required for voice recording. Please:\n\n1. Click the microphone icon in your browser\'s address bar\n2. Select "Allow" for microphone access\n3. Refresh the page and try again');
-                    } else if (error.name === 'NotFoundError') {
-                        updateVoiceStatus('❌', 'No microphone found. Please connect a microphone and try again.');
+                        updateVoiceStatusMini('❌ Microphone access denied');
                     } else {
-                        updateVoiceStatus('❌', `Microphone error: ${error.message}`);
+                        updateVoiceStatusMini('❌ Microphone error');
                     }
                 });
         }
 
-        function stopRecording() {
-            if (recognition && isRecording) {
+        function stopVoiceInput() {
+            if (recognition && isUnifiedRecording) {
                 recognition.stop();
-                
-                // Show the edit section if we have transcribed text
-                if (transcribedText.trim()) {
-                    showEditSection();
-                } else {
-                    updateVoiceStatus('⚠️', 'No speech detected. Please try recording again.');
-                }
+                isUnifiedRecording = false;
             }
+            resetUnifiedRecordingState();
         }
 
-        function clearVoiceTranscription() {
-            transcribedText = '';
-            voiceStreamingText = ''; // Reset accumulated text
-            updateTranscriptionDisplay();
-            hideEditSection();
-            document.getElementById('voiceResponseSection').classList.remove('show');
-            updateVoiceStatus('🔴', 'Ready to record');
+        function resetUnifiedRecordingState() {
+            isUnifiedRecording = false;
+            document.getElementById('addVoiceBtn').disabled = false;
+            document.getElementById('stopVoiceBtn').disabled = true;
+            updateVoiceStatusMini('Ready');
+            
+            // Hide live transcription section
+            const liveTranscriptionSection = document.getElementById('liveTranscriptionSection');
+            const liveTranscription = document.getElementById('liveTranscription');
+            liveTranscriptionSection.classList.remove('show');
+            liveTranscription.classList.remove('listening');
+            liveTranscription.textContent = 'Listening...';
         }
 
-        function showEditSection() {
-            const editSection = document.getElementById('editSubmitSection');
-            const editableText = document.getElementById('editableText');
-            
-            // Populate the editable textarea with transcribed text
-            editableText.value = transcribedText.trim();
-            
-            // Show the edit section
-            editSection.classList.add('show');
-            editSection.style.display = 'block';
-            
-            // Focus on the textarea for immediate editing
-            editableText.focus();
-            
-            // Check if model is selected to enable/disable submit button
-            updateSubmitButtonState();
-            
-            updateVoiceStatus('✏️', 'Edit your text and click "Submit for Analysis"');
+        function updateVoiceStatusMini(text, className = '') {
+            const statusElement = document.getElementById('voiceStatusMini');
+            statusElement.textContent = text;
+            statusElement.className = 'voice-status-mini ' + className;
         }
 
-        function hideEditSection() {
-            const editSection = document.getElementById('editSubmitSection');
-            editSection.classList.remove('show');
-            editSection.style.display = 'none';
+        function updateUnifiedTextStats() {
+            const textInput = document.getElementById('unifiedTextInput');
+            const text = textInput.value;
+            const charCount = text.length;
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            
+            const statsElement = document.getElementById('unifiedTextStats');
+            statsElement.innerHTML = `<span class="char-count">${charCount} characters</span> • <span class="word-count">${wordCount} words</span>`;
+            
+            updateUnifiedSubmitButtonState();
         }
 
-        function updateSubmitButtonState() {
-            const submitBtn = document.getElementById('submitForAnalysis');
-            const editableText = document.getElementById('editableText');
-            const selectedModel = document.getElementById('voiceModelSelect').value;
-            const textStats = document.getElementById('textStats');
+        function updateUnifiedSubmitButtonState() {
+            const textInput = document.getElementById('unifiedTextInput');
+            const modelSelect = document.getElementById('voiceModelSelect');
+            const submitBtn = document.getElementById('submitUnifiedInput');
             
-            const text = editableText.value.trim();
-            const hasText = text.length > 0;
-            const hasModel = selectedModel !== '';
+            const hasText = textInput.value.trim().length > 0;
+            const hasModel = modelSelect.value !== '';
             
-            // Update text statistics
-            const charCount = editableText.value.length;
-            const wordCount = text ? text.split(/\s+/).length : 0;
-            textStats.innerHTML = `<span class="char-count">${charCount} characters</span> • <span class="word-count">${wordCount} words</span>`;
-            
-            // Update submit button state
             submitBtn.disabled = !hasText || !hasModel;
             
-            if (!hasModel) {
-                submitBtn.textContent = '⚠️ Select a Model First';
-            } else if (!hasText) {
-                submitBtn.textContent = '⚠️ Enter Text First';
+            if (!hasText) {
+                submitBtn.title = 'Please enter some text first';
+            } else if (!hasModel) {
+                submitBtn.title = 'Please select an AI model';
             } else {
-                submitBtn.textContent = '🚀 Submit for Analysis';
+                submitBtn.title = 'Submit for AI analysis';
             }
         }
 
-        function submitForAnalysis() {
-            const editableText = document.getElementById('editableText');
-            const selectedModel = document.getElementById('voiceModelSelect').value;
-            const textToAnalyze = editableText.value.trim();
+        function clearUnifiedInput() {
+            document.getElementById('unifiedTextInput').value = '';
+            updateUnifiedTextStats();
+            updateUnifiedSubmitButtonState();
             
-            if (!textToAnalyze) {
-                alert('Please enter text to analyze');
+            // Stop any ongoing recording
+            if (isUnifiedRecording) {
+                stopVoiceInput();
+            }
+            
+            // Clear any response
+            const responseSection = document.getElementById('voiceResponseSection');
+            if (responseSection) {
+                responseSection.style.display = 'none';
+            }
+        }
+
+        function submitUnifiedInput() {
+            const textInput = document.getElementById('unifiedTextInput');
+            const modelSelect = document.getElementById('voiceModelSelect');
+            const text = textInput.value.trim();
+            const selectedModel = modelSelect.value;
+            
+            if (!text || !selectedModel) {
+                updateVoiceStatusMini('❌ Please enter text and select a model');
                 return;
             }
             
-            if (!selectedModel) {
-                alert('Please select a model for analysis');
-                return;
-            }
+            // Disable submit button during processing
+            const submitBtn = document.getElementById('submitUnifiedInput');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Processing...';
             
-            // Hide edit section and show processing
-            hideEditSection();
-            updateVoiceStatus('🔄', 'Processing with AI...');
+            // Show response section
+            const responseSection = document.getElementById('voiceResponseSection');
+            const responseMeta = document.getElementById('voiceResponseMeta');
+            const responseContent = document.getElementById('voiceResponseContent');
             
-            // Process with AI
-            processVoiceWithAI(textToAnalyze, selectedModel);
+            responseSection.style.display = 'block';
+            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModel}...`;
+            responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
+            
+            // Reset voice streaming text for this new query
+            voiceStreamingText = '';
+            
+            // Send to backend using the existing query_models event
+            const queryData = {
+                session_id: sessionId,
+                question: text,
+                question_type: 'general',
+                models: [selectedModel],
+                streaming: true
+            };
+            
+            console.log('🚀 Submitting unified input:', queryData);
+            socket.emit('query_models', queryData);
         }
 
-        function cancelEdit() {
-            hideEditSection();
-            updateVoiceStatus('🔴', 'Ready to record');
+        // Reset voice streaming text accumulator for new queries  
+        function resetVoiceStreaming() {
+            voiceStreamingText = '';
         }
 
-        function updateVoiceStatus(indicator, text) {
-            document.querySelector('.voice-status .status-indicator').textContent = indicator;
-            document.querySelector('.voice-status .status-text').textContent = text;
+        // Handle voice query completion (re-enable submit button)
+        function handleVoiceQueryComplete() {
+            const submitBtn = document.getElementById('submitUnifiedInput');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Submit for Analysis';
+            updateUnifiedSubmitButtonState();
         }
 
+        // Format AI response text with markdown-like formatting
         function formatResponseText(text) {
-            // Enhanced formatting for AI responses in voice tab
             let formatted = text;
             
             // Clean up any extra whitespace and normalize line breaks
@@ -4769,47 +5129,6 @@
             formatted = formatted.replace(/>\s+</g, '><'); // Remove whitespace between tags
             
             return formatted;
-        }
-
-        function updateTranscriptionDisplay() {
-            const transcriptionArea = document.getElementById('transcriptionArea');
-            if (transcribedText.trim()) {
-                transcriptionArea.textContent = transcribedText;
-                transcriptionArea.classList.remove('no-transcription');
-            } else {
-                transcriptionArea.innerHTML = '<div class="no-transcription">Click "Start Recording" to begin transcribing your speech...</div>';
-            }
-        }
-
-        function resetRecordingState() {
-            isRecording = false;
-            document.getElementById('startRecordingBtn').disabled = false;
-            document.getElementById('stopRecordingBtn').disabled = true;
-            document.querySelector('.transcription-area').classList.remove('recording');
-        }
-
-        // Voice streaming variables
-        let voiceStreamingText = '';
-
-        function processVoiceWithAI(text, model) {
-            const responseSection = document.getElementById('voiceResponseSection');
-            const responseMeta = document.getElementById('voiceResponseMeta');
-            const responseContent = document.getElementById('voiceResponseContent');
-            
-            responseSection.classList.add('show');
-            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${model}...`;
-            responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
-            
-            // Reset streaming text accumulator
-            voiceStreamingText = '';
-            
-            // Send to backend for streaming processing using the same handler as Q&A tab
-            socket.emit('query_models', {
-                question: text,
-                type: 'general',
-                streaming: true,
-                selected_models: [model]
-            });
         }
 
         // ========== IMAGE TO TEXT FUNCTIONALITY ==========
