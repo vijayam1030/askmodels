@@ -2331,6 +2331,111 @@
             font-style: italic;
         }
 
+        /* Conversation History Styles */
+        .conversation-entry {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .conversation-entry.question-entry {
+            background: linear-gradient(135deg, #e3f2fd, #f1f8e9);
+            border-left: 4px solid #2196F3;
+            margin-left: 0;
+            margin-right: 40px;
+        }
+
+        .conversation-entry.response-entry {
+            background: linear-gradient(135deg, #f8f9fa, #e8f5e8);
+            border-left: 4px solid #4CAF50;
+            margin-left: 40px;
+            margin-right: 0;
+        }
+
+        .conversation-entry.streaming {
+            background: linear-gradient(135deg, #fff3e0, #f3e5f5);
+            border-left: 4px solid #FF9800;
+            animation: pulse 2s ease-in-out infinite alternate;
+        }
+
+        .conversation-entry.loading {
+            background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+            border-left: 4px solid #9E9E9E;
+        }
+
+        .entry-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .entry-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .entry-label {
+            margin-right: auto;
+            color: #333;
+        }
+
+        .entry-time {
+            font-size: 11px;
+            color: #888;
+            font-weight: normal;
+        }
+
+        .entry-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            word-wrap: break-word;
+        }
+
+        .entry-content.streaming {
+            font-family: 'Courier New', monospace;
+        }
+
+        .ai-thinking {
+            display: flex;
+            align-items: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .ai-thinking::after {
+            content: '';
+            width: 3px;
+            height: 18px;
+            background: #666;
+            margin-left: 5px;
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.01); }
+        }
+
+        .conversation-placeholder {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 40px 20px;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            background: #fafafa;
+        }
+
         .voice-response-content .loading {
             display: flex;
             align-items: center;
@@ -3296,11 +3401,20 @@
                     createOrUpdateResponseCard(data.model, 'processing', '');
                     responseControls.style.display = 'block';
                 } else if (activeTab === 'voice') {
+                    // Add the question to conversation history now that AI is starting to respond
+                    if (window.currentVoiceQuestion) {
+                        voiceConversationHistory.push(window.currentVoiceQuestion);
+                        window.currentVoiceQuestion = null; // Clear temporary storage
+                    }
+                    
                     // Update voice response status
                     const responseMeta = document.getElementById('voiceResponseMeta');
                     if (responseMeta) {
                         responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${data.model}...`;
                     }
+                    
+                    // Update conversation display to show the question and loading state
+                    updateVoiceConversationDisplay();
                 } else if (activeTab === 'image') {
                     console.log('🔍 Handling image tab model_started');
                     // Update image response status and show explanation section
@@ -3339,31 +3453,24 @@
                 if (activeTab === 'qa') {
                     appendToResponse(data.model, data.chunk);
                 } else if (activeTab === 'voice') {
-                    // Handle voice streaming with smooth text flow
+                    // Handle voice streaming with conversation history
+                    currentVoiceResponse += data.chunk;
+                    
+                    // Update the conversation display with the current streaming response
+                    const currentResponseContent = document.getElementById('currentResponseContent');
+                    if (currentResponseContent) {
+                        currentResponseContent.textContent = currentVoiceResponse;
+                        currentResponseContent.classList.add('streaming');
+                        console.log('✅ Voice: Updated streaming response, total length:', currentVoiceResponse.length);
+                    } else {
+                        // If no current response element, update full display
+                        updateVoiceConversationDisplay();
+                    }
+                    
+                    // Auto-scroll to bottom
                     const responseContent = document.getElementById('voiceResponseContent');
                     if (responseContent) {
-                        // Accumulate the raw text
-                        voiceStreamingText += data.chunk;
-                        
-                        let responseText = responseContent.querySelector('.response-text');
-                        if (!responseText) {
-                            // First chunk - create the response container and replace loading message
-                            responseContent.innerHTML = `<div class="response-text streaming"></div>`;
-                            responseText = responseContent.querySelector('.response-text');
-                            console.log('✅ Voice: Created new response-text div for streaming');
-                        }
-                        
-                        if (responseText) {
-                            // During streaming, use textContent for natural text flow
-                            responseText.textContent = voiceStreamingText;
-                            responseText.classList.add('streaming');
-                            console.log('✅ Voice: Appended chunk, total length:', voiceStreamingText.length);
-                        }
-                        
-                        // Auto-scroll to bottom for long responses
                         responseContent.scrollTop = responseContent.scrollHeight;
-                    } else {
-                        console.error('❌ Voice: voiceResponseContent not found for chunk!');
                     }
                 } else if (activeTab === 'image') {
                     console.log('🔍 Handling image tab chunk_received');
@@ -3408,34 +3515,38 @@
                 if (activeTab === 'qa') {
                     updateResponseStatus(data.model, 'completed', data.elapsed_time);
                 } else if (activeTab === 'voice') {
-                    // Update voice completion status and apply final formatting
+                    // Update voice completion status and finalize conversation entry
                     const responseMeta = document.getElementById('voiceResponseMeta');
-                    const responseContent = document.getElementById('voiceResponseContent');
                     
                     if (responseMeta) {
                         responseMeta.innerHTML = `<span class="status-indicator status-success"></span>Response from ${data.model} (${data.elapsed_time || 'N/A'})`;
                     }
                     
-                    // Apply final formatting to the accumulated text
-                    if (responseContent && voiceStreamingText) {
-                        const responseText = responseContent.querySelector('.response-text');
-                        if (responseText) {
-                            // Remove streaming class and apply formatting
-                            responseText.classList.remove('streaming');
-                            
-                            // Only apply formatting if text contains markdown-like elements
-                            if (voiceStreamingText.includes('**') || voiceStreamingText.includes('*') || 
-                                voiceStreamingText.includes('```') || voiceStreamingText.includes('#') ||
-                                voiceStreamingText.includes('- ') || /^\d+\.\s/.test(voiceStreamingText)) {
-                                const formattedText = formatResponseText(voiceStreamingText);
-                                responseText.innerHTML = formattedText;
-                                console.log('✅ Voice: Applied markdown formatting to completed response');
-                            } else {
-                                // Keep as plain text if no formatting needed - preserves natural flow
-                                console.log('✅ Voice: Keeping response as plain text (no formatting needed)');
-                            }
+                    // Add completed response to conversation history
+                    if (currentVoiceResponse) {
+                        const lastQuestion = voiceConversationHistory[voiceConversationHistory.length - 1];
+                        
+                        // Apply formatting if needed
+                        let finalContent = currentVoiceResponse;
+                        if (currentVoiceResponse.includes('**') || currentVoiceResponse.includes('*') || 
+                            currentVoiceResponse.includes('```') || currentVoiceResponse.includes('#') ||
+                            currentVoiceResponse.includes('- ') || /^\d+\.\s/.test(currentVoiceResponse)) {
+                            finalContent = formatResponseText(currentVoiceResponse);
                         }
+                        
+                        voiceConversationHistory.push({
+                            type: 'response',
+                            content: finalContent,
+                            timestamp: new Date().toLocaleTimeString(),
+                            model: data.model,
+                            responseTime: data.elapsed_time
+                        });
+                        
+                        console.log('✅ Voice: Added completed response to conversation history');
                     }
+                    
+                    // Update the full conversation display
+                    updateVoiceConversationDisplay();
                     
                     // Re-enable submit button after completion
                     handleVoiceQueryComplete();
@@ -4905,8 +5016,13 @@
                 }
                 
                 if (finalTranscript) {
-                    transcribedText += finalTranscript + ' ';
-                    updateTranscriptionDisplay();
+                    // Clean the transcript before adding it
+                    const cleanFinalTranscript = finalTranscript.trim();
+                    if (cleanFinalTranscript) {
+                        transcribedText += cleanFinalTranscript + ' ';
+                        // Clean up any multiple spaces in the accumulated text
+                        transcribedText = transcribedText.replace(/\s+/g, ' ').trim() + ' ';
+                    }
                 }
                 
                 // Show interim results
@@ -4962,6 +5078,15 @@
             document.getElementById('unifiedTextInput').addEventListener('input', updateUnifiedTextStats);
             document.getElementById('voiceModelSelect').addEventListener('change', updateUnifiedSubmitButtonState);
             
+            // Track cursor position changes
+            document.getElementById('unifiedTextInput').addEventListener('click', function(e) {
+                currentCursorPosition = e.target.selectionStart;
+            });
+            
+            document.getElementById('unifiedTextInput').addEventListener('keyup', function(e) {
+                currentCursorPosition = e.target.selectionStart;
+            });
+            
             // Keyboard shortcuts for the unified textarea
             document.getElementById('unifiedTextInput').addEventListener('keydown', function(e) {
                 // Ctrl+Enter or Cmd+Enter to submit
@@ -4987,6 +5112,7 @@
         let isUnifiedRecording = false;
         let unifiedRecognition = null;
         let voiceStreamingText = '';
+        let currentCursorPosition = 0; // Track cursor position across recording sessions
 
         function addVoiceInput() {
             if (!recognition) {
@@ -5016,8 +5142,14 @@
                     stopVoiceBtn.disabled = false;
                     updateVoiceStatusMini('🎙️ Recording', 'recording');
                     
-                    // Store cursor position in textarea
-                    const cursorPosition = unifiedTextInput.selectionStart;
+                    // Get current cursor position or use end of text if this is a continuation
+                    if (currentCursorPosition === 0 || currentCursorPosition > unifiedTextInput.value.length) {
+                        currentCursorPosition = unifiedTextInput.value.length; // Place at end if first time or invalid position
+                    }
+                    
+                    // Set cursor to the tracked position
+                    unifiedTextInput.setSelectionRange(currentCursorPosition, currentCursorPosition);
+                    unifiedTextInput.focus();
                     
                     // Start recognition
                     isUnifiedRecording = true;
@@ -5048,20 +5180,36 @@
                         // Add final transcript to textarea at cursor position
                         if (finalTranscript) {
                             const currentText = unifiedTextInput.value;
-                            const beforeCursor = currentText.substring(0, cursorPosition);
-                            const afterCursor = currentText.substring(cursorPosition);
+                            const beforeCursor = currentText.substring(0, currentCursorPosition);
+                            const afterCursor = currentText.substring(currentCursorPosition);
                             
-                            // Add space before if there's text before cursor and it doesn't end with space
-                            const prefix = (beforeCursor && !beforeCursor.endsWith(' ') && !beforeCursor.endsWith('\n')) ? ' ' : '';
+                            // Clean the final transcript
+                            const cleanTranscript = finalTranscript.trim();
                             
-                            // Add space after if there's text after cursor and finalTranscript doesn't end with space
-                            const suffix = (afterCursor && !finalTranscript.endsWith(' ') && !afterCursor.startsWith(' ')) ? ' ' : '';
+                            // Add space before only if there's text before cursor and it doesn't end with space
+                            const needsPrefix = beforeCursor && !beforeCursor.endsWith(' ') && !beforeCursor.endsWith('\n');
+                            const prefix = needsPrefix ? ' ' : '';
                             
-                            const newText = beforeCursor + prefix + finalTranscript + suffix + afterCursor;
-                            unifiedTextInput.value = newText;
+                            // Add space after only if there's text after cursor and it doesn't start with space or punctuation
+                            const needsSuffix = afterCursor && !afterCursor.startsWith(' ') && !afterCursor.startsWith('\n') && !/^[.,!?;:]/.test(afterCursor);
+                            const suffix = needsSuffix ? ' ' : '';
                             
-                            // Update cursor position
-                            const newCursorPos = cursorPosition + prefix.length + finalTranscript.length + suffix.length;
+                            const newText = beforeCursor + prefix + cleanTranscript + suffix + afterCursor;
+                            
+                            // Clean up any multiple spaces
+                            const cleanedText = newText.replace(/\s+/g, ' ');
+                            unifiedTextInput.value = cleanedText;
+                            
+                            // Update cursor position (account for potential space cleanup)
+                            const expectedPos = currentCursorPosition + prefix.length + cleanTranscript.length + suffix.length;
+                            const actualLength = cleanedText.length;
+                            const originalLength = newText.length;
+                            const positionAdjustment = actualLength - originalLength;
+                            const newCursorPos = Math.min(expectedPos + positionAdjustment, cleanedText.length);
+                            
+                            // Update the tracked cursor position for next recording session
+                            currentCursorPosition = newCursorPos;
+                            
                             unifiedTextInput.setSelectionRange(newCursorPos, newCursorPos);
                             unifiedTextInput.focus();
                             
@@ -5170,6 +5318,7 @@
 
         function clearUnifiedInput() {
             document.getElementById('unifiedTextInput').value = '';
+            currentCursorPosition = 0; // Reset cursor position tracking
             updateUnifiedTextStats();
             updateUnifiedSubmitButtonState();
             
@@ -5178,7 +5327,10 @@
                 stopVoiceInput();
             }
             
-            // Clear any response
+            // Clear conversation history
+            clearVoiceConversation();
+            
+            // Hide response section
             const responseSection = document.getElementById('voiceResponseSection');
             if (responseSection) {
                 responseSection.style.display = 'none';
@@ -5196,33 +5348,30 @@
                 return;
             }
             
-            // Add user question to conversation history
-            voiceConversationHistory.push({
+            // Store the current question temporarily (don't add to history yet)
+            window.currentVoiceQuestion = {
                 type: 'question',
                 content: text,
                 timestamp: new Date().toLocaleTimeString(),
                 model: selectedModel
-            });
+            };
             
             // Start voice processing mode
             startVoiceProcessing('voice-to-text');
             
-            // Show response section and update conversation display
+            // Show response section
             const responseSection = document.getElementById('voiceResponseSection');
             const responseMeta = document.getElementById('voiceResponseMeta');
-            const responseContent = document.getElementById('voiceResponseContent');
             
             responseSection.style.display = 'block';
             responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModel}...`;
-            
-            // Update conversation display with question + response placeholder
-            updateVoiceConversationDisplay();
             
             // Reset current response accumulator for this new query
             currentVoiceResponse = '';
             
             // Clear the input field for next question
             textInput.value = '';
+            currentCursorPosition = 0; // Reset cursor position for next input
             updateUnifiedTextStats();
             
             // Send to backend using the existing query_models event
@@ -5236,6 +5385,89 @@
             
             console.log('🚀 Submitting unified input:', queryData);
             socket.emit('query_models', queryData);
+        }
+
+        // Update voice conversation display with history
+        function updateVoiceConversationDisplay() {
+            const responseContent = document.getElementById('voiceResponseContent');
+            if (!responseContent) return;
+            
+            let conversationHtml = '';
+            
+            voiceConversationHistory.forEach((entry, index) => {
+                if (entry.type === 'question') {
+                    conversationHtml += `
+                        <div class="conversation-entry question-entry">
+                            <div class="entry-header">
+                                <span class="entry-icon">👤</span>
+                                <span class="entry-label">You</span>
+                                <span class="entry-time">${entry.timestamp}</span>
+                            </div>
+                            <div class="entry-content">${escapeHtml(entry.content)}</div>
+                        </div>
+                    `;
+                } else if (entry.type === 'response') {
+                    conversationHtml += `
+                        <div class="conversation-entry response-entry">
+                            <div class="entry-header">
+                                <span class="entry-icon">🤖</span>
+                                <span class="entry-label">${entry.model}</span>
+                                <span class="entry-time">${entry.timestamp}</span>
+                            </div>
+                            <div class="entry-content">${entry.content}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            // Add current streaming response if in progress
+            if (isVoiceProcessing && currentVoiceResponse) {
+                const lastQuestion = voiceConversationHistory[voiceConversationHistory.length - 1];
+                conversationHtml += `
+                    <div class="conversation-entry response-entry streaming">
+                        <div class="entry-header">
+                            <span class="entry-icon">🤖</span>
+                            <span class="entry-label">${lastQuestion ? lastQuestion.model : 'AI'}</span>
+                            <span class="entry-time">Responding...</span>
+                        </div>
+                        <div class="entry-content streaming" id="currentResponseContent">${escapeHtml(currentVoiceResponse)}</div>
+                    </div>
+                `;
+            } else if (isVoiceProcessing) {
+                // Show loading for new question
+                const lastQuestion = voiceConversationHistory[voiceConversationHistory.length - 1];
+                conversationHtml += `
+                    <div class="conversation-entry response-entry loading">
+                        <div class="entry-header">
+                            <span class="entry-icon">🤖</span>
+                            <span class="entry-label">${lastQuestion ? lastQuestion.model : 'AI'}</span>
+                            <span class="entry-time">Thinking...</span>
+                        </div>
+                        <div class="entry-content loading" id="currentResponseContent">
+                            <div class="ai-thinking">🤖 AI is thinking...</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            responseContent.innerHTML = conversationHtml;
+            
+            // Auto-scroll to bottom
+            responseContent.scrollTop = responseContent.scrollHeight;
+        }
+
+        // Clear voice conversation history
+        function clearVoiceConversation() {
+            voiceConversationHistory = [];
+            currentVoiceResponse = '';
+            window.currentVoiceQuestion = null; // Clear temporary question storage
+            
+            const responseContent = document.getElementById('voiceResponseContent');
+            if (responseContent) {
+                responseContent.innerHTML = '<div class="conversation-placeholder">Start a conversation by typing a question above and submitting it for AI analysis.</div>';
+            }
+            
+            console.log('✅ Voice conversation history cleared');
         }
 
         // Reset voice streaming text accumulator for new queries  
