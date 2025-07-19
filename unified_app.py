@@ -48,6 +48,10 @@ available_models = []
 # Conversation history storage
 conversation_histories = {}  # {session_id: {model_name: [conversation_history]}}
 
+# Active session tracking for stop processing
+active_queries = {}  # {session_id: {models: [], should_stop: False}}
+active_debates = {}  # {session_id: {models: [], should_stop: False}}
+
 class ConversationManager:
     """Manages conversation history for Ask AI functionality."""
     
@@ -1762,6 +1766,39 @@ def handle_cancel_query(data):
         socketio.emit('error', {
             'message': f'Error cancelling query: {str(e)}',
             'session_id': session_id
+        })
+
+@socketio.on('stop_processing')
+def handle_stop_processing():
+    """Handle stop processing request from voice-to-text tab."""
+    try:
+        session_id = request.sid
+        print(f"🛑 Stop processing requested for session: {session_id}")
+        
+        # Stop any ongoing processing for this session
+        if session_id in active_queries:
+            print(f"🛑 Stopping active query for session: {session_id}")
+            active_queries[session_id]['should_stop'] = True
+            del active_queries[session_id]
+        
+        if session_id in active_debates:
+            print(f"🛑 Stopping active debate for session: {session_id}")
+            active_debates[session_id]['should_stop'] = True
+            del active_debates[session_id]
+        
+        # Emit confirmation back to client
+        socketio.emit('processing_stopped', {
+            'message': 'Processing stopped successfully',
+            'session_id': session_id
+        })
+        
+        print(f"✅ Processing stopped for session: {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error stopping processing: {e}")
+        socketio.emit('error', {
+            'message': f'Error stopping processing: {str(e)}',
+            'session_id': request.sid
         })
 
 @socketio.on('ask_llm')
