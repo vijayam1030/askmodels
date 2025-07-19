@@ -1681,6 +1681,334 @@
                 gap: 10px;
             }
         }
+
+        /* Voice to Text Styles */
+        .voice-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .voice-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .voice-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+
+        .model-selection-voice {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .model-select-voice {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .recording-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .recording-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .recording-btn.start {
+            background: #28a745;
+            color: white;
+        }
+
+        .recording-btn.start:hover {
+            background: #218838;
+        }
+
+        .recording-btn.stop {
+            background: #dc3545;
+            color: white;
+        }
+
+        .recording-btn.stop:hover {
+            background: #c82333;
+        }
+
+        .recording-btn.clear {
+            background: #6c757d;
+            color: white;
+        }
+
+        .recording-btn.clear:hover {
+            background: #5a6268;
+        }
+
+        .recording-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .voice-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            font-size: 12px;
+        }
+
+        .transcription-section, .voice-response-section {
+            margin-bottom: 20px;
+        }
+
+        .transcription-area {
+            min-height: 200px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .no-transcription {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .transcription-area.recording {
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+
+        .voice-response-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .voice-response-content {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        /* Image to Text Styles */
+        .image-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .image-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .image-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: end;
+        }
+
+        .model-selection-image {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .model-select-image {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .upload-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            padding: 12px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+
+        .clear-btn, .process-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #5a6268;
+        }
+
+        .process-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .process-btn:hover {
+            background: #218838;
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .image-preview-section, .extraction-section, .explanation-section {
+            margin-bottom: 20px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .no-images {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 50px 20px;
+            grid-column: 1 / -1;
+        }
+
+        .image-item {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .image-item:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .image-info {
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+
+        .extraction-content, .explanation-content {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .explanation-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .extracted-text {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .text-section {
+            margin-bottom: 20px;
+        }
+
+        .text-section h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+
+        /* Hidden sections */
+        .voice-response-section:not(.show),
+        .extraction-section:not(.show),
+        .explanation-section:not(.show) {
+            display: none;
+        }
+
+        .voice-response-section.show,
+        .extraction-section.show,
+        .explanation-section.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -1698,6 +2026,12 @@
                 </button>
                 <button class="tab-button" onclick="switchTab('debate')">
                     🗣️ Debate Mode
+                </button>
+                <button class="tab-button" onclick="switchTab('voice')">
+                    🎤 Voice to Text
+                </button>
+                <button class="tab-button" onclick="switchTab('image')">
+                    🖼️ Image to Text
                 </button>
                 <button class="tab-button" onclick="switchTab('dashboard')">
                     📊 Live Dashboard
@@ -1915,6 +2249,93 @@
                 </div>
             </div>
 
+            <!-- Voice to Text Tab -->
+            <div id="voice-tab" class="tab-content">
+                <div class="voice-container">
+                    <div class="voice-header">
+                        <h2>🎤 Voice to Text</h2>
+                        <p>Real-time speech recognition and AI assistance</p>
+                    </div>
+                    
+                    <div class="voice-controls">
+                        <div class="model-selection-voice">
+                            <label for="voiceModelSelect">Select AI Model for Response:</label>
+                            <select id="voiceModelSelect" class="model-select-voice">
+                                <option value="">Choose a model...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="recording-controls">
+                            <button id="startRecordingBtn" class="recording-btn start">🎤 Start Recording</button>
+                            <button id="stopRecordingBtn" class="recording-btn stop" disabled>⏹️ Stop Recording</button>
+                            <button id="clearVoiceBtn" class="recording-btn clear">🗑️ Clear</button>
+                        </div>
+                    </div>
+                    
+                    <div class="voice-status" id="voiceStatus">
+                        <span class="status-indicator">🔴</span>
+                        <span class="status-text">Ready to record</span>
+                    </div>
+                    
+                    <div class="transcription-section">
+                        <h3>📝 Live Transcription</h3>
+                        <div class="transcription-area" id="transcriptionArea">
+                            <div class="no-transcription">Click "Start Recording" to begin transcribing your speech...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="voice-response-section" id="voiceResponseSection" style="display: none;">
+                        <h3>🤖 AI Response</h3>
+                        <div class="voice-response-meta" id="voiceResponseMeta"></div>
+                        <div class="voice-response-content" id="voiceResponseContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image to Text Tab -->
+            <div id="image-tab" class="tab-content">
+                <div class="image-container">
+                    <div class="image-header">
+                        <h2>🖼️ Image to Text</h2>
+                        <p>Extract text from images and get AI code explanations</p>
+                    </div>
+                    
+                    <div class="image-controls">
+                        <div class="model-selection-image">
+                            <label for="imageModelSelect">Select Coding Model for Explanation:</label>
+                            <select id="imageModelSelect" class="model-select-image">
+                                <option value="">Choose a coding model...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="upload-controls">
+                            <input type="file" id="imageUpload" accept="image/*" multiple class="file-input">
+                            <label for="imageUpload" class="upload-btn">📁 Upload Images</label>
+                            <button id="clearImagesBtn" class="clear-btn">🗑️ Clear All</button>
+                            <button id="processImagesBtn" class="process-btn" disabled>🔍 Extract & Explain</button>
+                        </div>
+                    </div>
+                    
+                    <div class="image-preview-section" id="imagePreviewSection">
+                        <h3>📷 Selected Images</h3>
+                        <div class="image-grid" id="imageGrid">
+                            <div class="no-images">No images selected. Upload images to begin text extraction.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="extraction-section" id="extractionSection" style="display: none;">
+                        <h3>📝 Extracted Text</h3>
+                        <div class="extraction-content" id="extractionContent"></div>
+                    </div>
+                    
+                    <div class="explanation-section" id="explanationSection" style="display: none;">
+                        <h3>🤖 Code Explanation</h3>
+                        <div class="explanation-meta" id="explanationMeta"></div>
+                        <div class="explanation-content" id="explanationContent"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Dashboard Tab -->
             <div id="dashboard-tab" class="tab-content">
                 <div class="dashboard-container">
@@ -1989,6 +2410,15 @@
         const summarySection = document.getElementById('summarySection');
         const summaryContent = document.getElementById('summaryContent');
 
+        // Voice Recognition variables
+        let recognition = null;
+        let isRecording = false;
+        let transcribedText = '';
+
+        // Image Processing variables
+        let selectedImages = [];
+        let extractedTexts = [];
+
         // Tab Management
         function switchTab(tabName) {
             // Update tab buttons
@@ -2010,6 +2440,16 @@
                 isQuerying = false;
                 submitBtn.disabled = false;
                 submitBtn.textContent = '🚀 Query Models';
+            } else if (tabName === 'voice') {
+                // Voice tab initialization
+                isQuerying = false;
+                isDebating = false;
+                initializeVoiceTab();
+            } else if (tabName === 'image') {
+                // Image tab initialization
+                isQuerying = false;
+                isDebating = false;
+                initializeImageTab();
             } else if (tabName === 'dashboard') {
                 // Dashboard specific initialization
                 isQuerying = false;
@@ -2065,30 +2505,116 @@
 
         // ========== Q&A MODE EVENTS ==========
         socket.on('model_started', (data) => {
-            if (data.session_id === sessionId && activeTab === 'qa') {
-                createOrUpdateResponseCard(data.model, 'processing', '');
-                responseControls.style.display = 'block';
+            if (data.session_id === sessionId) {
+                if (activeTab === 'qa') {
+                    createOrUpdateResponseCard(data.model, 'processing', '');
+                    responseControls.style.display = 'block';
+                } else if (activeTab === 'voice') {
+                    // Update voice response status
+                    const responseMeta = document.getElementById('voiceResponseMeta');
+                    if (responseMeta) {
+                        responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${data.model}...`;
+                    }
+                } else if (activeTab === 'image') {
+                    // Update image response status
+                    const explanationMeta = document.getElementById('explanationMeta');
+                    if (explanationMeta) {
+                        explanationMeta.innerHTML = `<span class="status-indicator status-loading"></span>Analyzing code with ${data.model}...`;
+                    }
+                }
             }
         });
 
         socket.on('chunk_received', (data) => {
-            if (data.session_id === sessionId && activeTab === 'qa') {
-                appendToResponse(data.model, data.chunk);
+            if (data.session_id === sessionId) {
+                if (activeTab === 'qa') {
+                    appendToResponse(data.model, data.chunk);
+                } else if (activeTab === 'voice') {
+                    // Handle voice streaming
+                    const responseContent = document.getElementById('voiceResponseContent');
+                    if (responseContent) {
+                        let currentContent = responseContent.innerHTML;
+                        if (currentContent.includes('AI is thinking')) {
+                            responseContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                        } else {
+                            const responseText = responseContent.querySelector('.response-text');
+                            if (responseText) {
+                                responseText.innerHTML += data.chunk;
+                            }
+                        }
+                    }
+                } else if (activeTab === 'image') {
+                    // Handle image streaming
+                    const explanationContent = document.getElementById('explanationContent');
+                    if (explanationContent) {
+                        let currentContent = explanationContent.innerHTML;
+                        if (currentContent.includes('AI is analyzing')) {
+                            explanationContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                        } else {
+                            const responseText = explanationContent.querySelector('.response-text');
+                            if (responseText) {
+                                responseText.innerHTML += data.chunk;
+                            }
+                        }
+                    }
+                }
             }
         });
 
         socket.on('model_completed', (data) => {
-            if (data.session_id === sessionId && activeTab === 'qa') {
-                updateResponseStatus(data.model, 'completed', data.elapsed_time);
+            if (data.session_id === sessionId) {
+                if (activeTab === 'qa') {
+                    updateResponseStatus(data.model, 'completed', data.elapsed_time);
+                } else if (activeTab === 'voice') {
+                    // Update voice completion status
+                    const responseMeta = document.getElementById('voiceResponseMeta');
+                    if (responseMeta) {
+                        responseMeta.innerHTML = `<span class="status-indicator status-success"></span>Response from ${data.model} (${data.elapsed_time || 'N/A'})`;
+                    }
+                } else if (activeTab === 'image') {
+                    // Update image completion status
+                    const explanationMeta = document.getElementById('explanationMeta');
+                    if (explanationMeta) {
+                        explanationMeta.innerHTML = `<span class="status-indicator status-success"></span>Code analysis from ${data.model} (${data.elapsed_time || 'N/A'})`;
+                    }
+                }
             }
         });
 
         socket.on('response_received', (data) => {
-            if (data.session_id === sessionId && activeTab === 'qa') {
-                if (data.error) {
-                    createOrUpdateResponseCard(data.model, 'error', `Error: ${data.error}`);
-                } else {
-                    createOrUpdateResponseCard(data.model, 'completed', data.response, data.response_time);
+            if (data.session_id === sessionId) {
+                if (activeTab === 'qa') {
+                    if (data.error) {
+                        createOrUpdateResponseCard(data.model, 'error', `Error: ${data.error}`);
+                    } else {
+                        createOrUpdateResponseCard(data.model, 'completed', data.response, data.response_time);
+                    }
+                } else if (activeTab === 'voice') {
+                    // Handle voice tab responses
+                    const responseSection = document.getElementById('voiceResponseSection');
+                    const responseMeta = document.getElementById('voiceResponseMeta');
+                    const responseContent = document.getElementById('voiceResponseContent');
+                    
+                    if (data.error) {
+                        responseMeta.innerHTML = `<span class="status-indicator status-error"></span>Error with ${data.model}`;
+                        responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    } else {
+                        responseMeta.innerHTML = `<span class="status-indicator status-success"></span>Response from ${data.model} (${data.response_time || 'N/A'})`;
+                        responseContent.innerHTML = `<div class="response-text">${data.response}</div>`;
+                    }
+                } else if (activeTab === 'image') {
+                    // Handle image tab responses (code explanation)
+                    const explanationSection = document.getElementById('explanationSection');
+                    const explanationMeta = document.getElementById('explanationMeta');
+                    const explanationContent = document.getElementById('explanationContent');
+                    
+                    if (data.error) {
+                        explanationMeta.innerHTML = `<span class="status-indicator status-error"></span>Error with ${data.model}`;
+                        explanationContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    } else {
+                        explanationMeta.innerHTML = `<span class="status-indicator status-success"></span>Code analysis from ${data.model} (${data.response_time || 'N/A'})`;
+                        explanationContent.innerHTML = `<div class="response-text">${data.response}</div>`;
+                    }
                 }
             }
         });
@@ -3334,6 +3860,426 @@
                 console.log('Debate cancelled by user');
             }
         }
+
+        // ========== VOICE TO TEXT FUNCTIONALITY ==========
+        
+        function initializeVoiceTab() {
+            console.log('Initializing Voice tab...');
+            
+            // Populate model selection for voice
+            populateVoiceModelSelect();
+            
+            // Initialize speech recognition
+            initializeSpeechRecognition();
+            
+            // Setup event listeners
+            setupVoiceEventListeners();
+        }
+
+        function populateVoiceModelSelect() {
+            const voiceModelSelect = document.getElementById('voiceModelSelect');
+            if (!voiceModelSelect) return;
+            
+            voiceModelSelect.innerHTML = '<option value="">Choose a model...</option>';
+            
+            // Use the same models from the main Q&A functionality
+            if (window.modelsWithInfo && window.modelsWithInfo.length > 0) {
+                window.modelsWithInfo.forEach(modelInfo => {
+                    const option = document.createElement('option');
+                    option.value = modelInfo.name;
+                    option.textContent = `${modelInfo.name} - ${modelInfo.specialty}`;
+                    voiceModelSelect.appendChild(option);
+                });
+            }
+        }
+
+        function initializeSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                updateVoiceStatus('❌', 'Speech recognition not supported in this browser');
+                document.getElementById('startRecordingBtn').disabled = true;
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            
+            recognition.onstart = function() {
+                console.log('Speech recognition started');
+                isRecording = true;
+                updateVoiceStatus('🔴', 'Recording... Speak now!');
+                document.getElementById('startRecordingBtn').disabled = true;
+                document.getElementById('stopRecordingBtn').disabled = false;
+                document.querySelector('.transcription-area').classList.add('recording');
+            };
+            
+            recognition.onresult = function(event) {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (finalTranscript) {
+                    transcribedText += finalTranscript + ' ';
+                    updateTranscriptionDisplay();
+                }
+                
+                // Show interim results
+                const transcriptionArea = document.getElementById('transcriptionArea');
+                const currentText = transcribedText + interimTranscript;
+                if (currentText.trim()) {
+                    transcriptionArea.textContent = currentText;
+                    transcriptionArea.scrollTop = transcriptionArea.scrollHeight;
+                }
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                updateVoiceStatus('❌', `Error: ${event.error}`);
+                resetRecordingState();
+            };
+            
+            recognition.onend = function() {
+                console.log('Speech recognition ended');
+                if (isRecording) {
+                    updateVoiceStatus('⏸️', 'Recording stopped');
+                }
+                resetRecordingState();
+            };
+        }
+
+        function setupVoiceEventListeners() {
+            document.getElementById('startRecordingBtn').addEventListener('click', startRecording);
+            document.getElementById('stopRecordingBtn').addEventListener('click', stopRecording);
+            document.getElementById('clearVoiceBtn').addEventListener('click', clearVoiceTranscription);
+        }
+
+        function startRecording() {
+            if (!recognition) {
+                alert('Speech recognition not available');
+                return;
+            }
+            
+            transcribedText = '';
+            updateTranscriptionDisplay();
+            recognition.start();
+        }
+
+        function stopRecording() {
+            if (recognition && isRecording) {
+                recognition.stop();
+                
+                // Process the transcribed text with AI if a model is selected
+                const selectedModel = document.getElementById('voiceModelSelect').value;
+                if (selectedModel && transcribedText.trim()) {
+                    processVoiceWithAI(transcribedText.trim(), selectedModel);
+                }
+            }
+        }
+
+        function clearVoiceTranscription() {
+            transcribedText = '';
+            updateTranscriptionDisplay();
+            document.getElementById('voiceResponseSection').classList.remove('show');
+            updateVoiceStatus('🔴', 'Ready to record');
+        }
+
+        function updateVoiceStatus(indicator, text) {
+            document.querySelector('.voice-status .status-indicator').textContent = indicator;
+            document.querySelector('.voice-status .status-text').textContent = text;
+        }
+
+        function updateTranscriptionDisplay() {
+            const transcriptionArea = document.getElementById('transcriptionArea');
+            if (transcribedText.trim()) {
+                transcriptionArea.textContent = transcribedText;
+                transcriptionArea.classList.remove('no-transcription');
+            } else {
+                transcriptionArea.innerHTML = '<div class="no-transcription">Click "Start Recording" to begin transcribing your speech...</div>';
+            }
+        }
+
+        function resetRecordingState() {
+            isRecording = false;
+            document.getElementById('startRecordingBtn').disabled = false;
+            document.getElementById('stopRecordingBtn').disabled = true;
+            document.querySelector('.transcription-area').classList.remove('recording');
+        }
+
+        function processVoiceWithAI(text, model) {
+            const responseSection = document.getElementById('voiceResponseSection');
+            const responseMeta = document.getElementById('voiceResponseMeta');
+            const responseContent = document.getElementById('voiceResponseContent');
+            
+            responseSection.classList.add('show');
+            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${model}...`;
+            responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
+            
+            // Send to backend for processing
+            socket.emit('ask_llm', {
+                question: text,
+                model: model
+            });
+        }
+
+        // ========== IMAGE TO TEXT FUNCTIONALITY ==========
+        
+        function initializeImageTab() {
+            console.log('Initializing Image tab...');
+            
+            // Populate model selection for image processing
+            populateImageModelSelect();
+            
+            // Setup event listeners
+            setupImageEventListeners();
+        }
+
+        function populateImageModelSelect() {
+            const imageModelSelect = document.getElementById('imageModelSelect');
+            if (!imageModelSelect) return;
+            
+            imageModelSelect.innerHTML = '<option value="">Choose a coding model...</option>';
+            
+            // Filter for coding models only
+            if (window.modelsWithInfo && window.modelsWithInfo.length > 0) {
+                const codingModels = window.modelsWithInfo.filter(model => model.is_coding);
+                codingModels.forEach(modelInfo => {
+                    const option = document.createElement('option');
+                    option.value = modelInfo.name;
+                    option.textContent = `${modelInfo.name} - ${modelInfo.specialty}`;
+                    imageModelSelect.appendChild(option);
+                });
+            }
+        }
+
+        function setupImageEventListeners() {
+            document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+            document.getElementById('clearImagesBtn').addEventListener('click', clearImages);
+            document.getElementById('processImagesBtn').addEventListener('click', processImages);
+        }
+
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    selectedImages.push(file);
+                }
+            });
+            
+            updateImagePreview();
+            updateProcessButton();
+        }
+
+        function updateImagePreview() {
+            const imageGrid = document.getElementById('imageGrid');
+            
+            if (selectedImages.length === 0) {
+                imageGrid.innerHTML = '<div class="no-images">No images selected. Upload images to begin text extraction.</div>';
+                return;
+            }
+            
+            imageGrid.innerHTML = '';
+            
+            selectedImages.forEach((file, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                const img = document.createElement('img');
+                img.className = 'image-preview';
+                img.src = URL.createObjectURL(file);
+                img.alt = file.name;
+                
+                const info = document.createElement('div');
+                info.className = 'image-info';
+                info.innerHTML = `
+                    <div><strong>${file.name}</strong></div>
+                    <div>Size: ${(file.size / 1024).toFixed(1)} KB</div>
+                    <button onclick="removeImage(${index})" style="margin-top: 5px; padding: 2px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Remove</button>
+                `;
+                
+                imageItem.appendChild(img);
+                imageItem.appendChild(info);
+                imageGrid.appendChild(imageItem);
+            });
+        }
+
+        function removeImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreview();
+            updateProcessButton();
+        }
+
+        function clearImages() {
+            selectedImages = [];
+            extractedTexts = [];
+            updateImagePreview();
+            updateProcessButton();
+            document.getElementById('extractionSection').classList.remove('show');
+            document.getElementById('explanationSection').classList.remove('show');
+            document.getElementById('imageUpload').value = '';
+        }
+
+        function updateProcessButton() {
+            const processBtn = document.getElementById('processImagesBtn');
+            const modelSelected = document.getElementById('imageModelSelect').value;
+            
+            processBtn.disabled = selectedImages.length === 0 || !modelSelected;
+        }
+
+        function processImages() {
+            const selectedModel = document.getElementById('imageModelSelect').value;
+            
+            if (selectedImages.length === 0) {
+                alert('Please select images first');
+                return;
+            }
+            
+            if (!selectedModel) {
+                alert('Please select a coding model');
+                return;
+            }
+            
+            // Show extraction section
+            const extractionSection = document.getElementById('extractionSection');
+            const extractionContent = document.getElementById('extractionContent');
+            
+            extractionSection.classList.add('show');
+            extractionContent.innerHTML = '<div class="loading">🔍 Extracting text from images...</div>';
+            
+            // Process each image
+            processImagesSequentially(0, selectedModel);
+        }
+
+        function processImagesSequentially(index, model) {
+            if (index >= selectedImages.length) {
+                // All images processed, now get AI explanation
+                const allText = extractedTexts.join('\n\n');
+                if (allText.trim()) {
+                    getCodeExplanation(allText, model);
+                }
+                return;
+            }
+            
+            const file = selectedImages[index];
+            
+            // Use OCR API or library to extract text
+            // For now, we'll simulate the extraction
+            extractTextFromImage(file).then(extractedText => {
+                extractedTexts.push({
+                    filename: file.name,
+                    text: extractedText
+                });
+                
+                updateExtractionDisplay();
+                
+                // Process next image
+                processImagesSequentially(index + 1, model);
+            }).catch(error => {
+                console.error('Error extracting text from image:', error);
+                extractedTexts.push({
+                    filename: file.name,
+                    text: `Error extracting text from ${file.name}: ${error.message}`
+                });
+                
+                updateExtractionDisplay();
+                processImagesSequentially(index + 1, model);
+            });
+        }
+
+        function extractTextFromImage(file) {
+            return new Promise((resolve, reject) => {
+                // Here you would typically use an OCR library like Tesseract.js
+                // For demo purposes, we'll simulate text extraction
+                
+                // Check if Tesseract is available (you'd need to include the library)
+                if (typeof Tesseract !== 'undefined') {
+                    Tesseract.recognize(file, 'eng', {
+                        logger: m => console.log(m)
+                    }).then(({ data: { text } }) => {
+                        resolve(text);
+                    }).catch(reject);
+                } else {
+                    // Fallback: simulate OCR for demo
+                    setTimeout(() => {
+                        resolve(`[Simulated OCR text extraction from ${file.name}]\n\nThis is a placeholder for actual OCR text extraction.\nYou would need to integrate with an OCR service or library like Tesseract.js\nto extract real text from the uploaded images.\n\n// Example code that might be found in images:\nfunction example() {\n    console.log("Hello, World!");\n    return true;\n}`);
+                    }, 1000);
+                }
+            });
+        }
+
+        function updateExtractionDisplay() {
+            const extractionContent = document.getElementById('extractionContent');
+            
+            if (extractedTexts.length === 0) {
+                extractionContent.innerHTML = '<div class="loading">🔍 Extracting text from images...</div>';
+                return;
+            }
+            
+            let html = '';
+            extractedTexts.forEach((item, index) => {
+                html += `
+                    <div class="text-section">
+                        <h4>📷 ${item.filename}</h4>
+                        <div class="extracted-text">${item.text}</div>
+                    </div>
+                `;
+            });
+            
+            extractionContent.innerHTML = html;
+        }
+
+        function getCodeExplanation(allText, model) {
+            const explanationSection = document.getElementById('explanationSection');
+            const explanationMeta = document.getElementById('explanationMeta');
+            const explanationContent = document.getElementById('explanationContent');
+            
+            explanationSection.classList.add('show');
+            explanationMeta.innerHTML = `<span class="status-indicator status-loading"></span>Analyzing code with ${model}...`;
+            explanationContent.innerHTML = '<div class="loading">🤖 AI is analyzing the extracted code...</div>';
+            
+            // Create a comprehensive prompt for code explanation
+            const prompt = `Please analyze and explain all the code found in the following text extracted from images. Provide detailed explanations of:
+
+1. What each piece of code does
+2. Programming languages used
+3. Key functions and logic
+4. Potential improvements or issues
+5. Overall purpose and structure
+
+Extracted text:
+${allText}
+
+Please format your response clearly with headers and explanations for each code section found.`;
+            
+            // Send to backend for processing
+            socket.emit('ask_llm', {
+                question: prompt,
+                model: model
+            });
+        }
+
+        // Listen for model selection changes to update process button
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup change listeners after DOM is loaded
+            setTimeout(() => {
+                const imageModelSelect = document.getElementById('imageModelSelect');
+                if (imageModelSelect) {
+                    imageModelSelect.addEventListener('change', updateProcessButton);
+                }
+            }, 100);
+        });
 
         // Response management functions (Q&A)
         function createOrUpdateResponseCard(modelName, status, content, responseTime = null) {
