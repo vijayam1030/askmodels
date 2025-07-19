@@ -4743,18 +4743,24 @@
                 // Also update the main voice response area with the summary
                 const voiceResponseContent = document.getElementById('voiceResponseContent');
                 if (voiceResponseContent && window.currentSummaryContent.length > 10) {
-                    // Always hide the summary widget/section in the voice tab
-                    const summarySection = document.getElementById('aiSummarySection');
-                    if (summarySection) summarySection.style.display = 'none';
-                    const summaryContent = document.getElementById('summaryContent');
-                    if (summaryContent) summaryContent.style.display = 'none';
 
+                    // Fully remove the summary widget/section in the voice tab
+                    const summarySection = document.getElementById('aiSummarySection');
+                    if (summarySection && summarySection.parentNode) {
+                        summarySection.parentNode.removeChild(summarySection);
+                    }
+                    const summaryContent = document.getElementById('summaryContent');
+                    if (summaryContent && summaryContent.parentNode) {
+                        summaryContent.parentNode.removeChild(summaryContent);
+                    }
+
+                    // Show only the summary text in the summary box
                     let summaryDiv = document.getElementById('inlineSummaryBox');
                     if (!summaryDiv) {
                         summaryDiv = document.createElement('div');
                         summaryDiv.id = 'inlineSummaryBox';
                         summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
-                        summaryDiv.innerHTML = '<b id="summaryBoxTitle"></b> <span id="inlineSummaryText"></span> <span id="summaryModelDropdownContainer"></span>';
+                        summaryDiv.innerHTML = '<b id="summaryBoxTitle"></b> <span id="inlineSummaryText"></span>';
                         voiceResponseContent.appendChild(summaryDiv);
                     }
                     const inlineSummaryText = document.getElementById('inlineSummaryText');
@@ -4765,14 +4771,19 @@
                         summaryBoxTitle.textContent = summaryModel ? `Summary (by ${summaryModel}):` : 'Summary:';
                         inlineSummaryText.textContent = window.currentSummaryContent;
                     }
-                    // Always show dropdown for summary model selection
-                    const dropdownContainer = document.getElementById('summaryModelDropdownContainer');
-                    if (dropdownContainer) {
-                        dropdownContainer.innerHTML = '';
-                        const dropdown = document.createElement('select');
-                        dropdown.id = 'summaryModelDropdown';
-                        dropdown.style.marginLeft = '16px';
-                        // Populate with available models
+
+                    // Place the model selection dropdown in a fixed section below the summary box
+                    let dropdownSection = document.getElementById('summaryModelDropdownSection');
+                    if (!dropdownSection) {
+                        dropdownSection = document.createElement('div');
+                        dropdownSection.id = 'summaryModelDropdownSection';
+                        dropdownSection.style.cssText = 'margin: 10px 0 24px 0; padding: 10px 0; display: flex; align-items: center; gap: 8px;';
+                        dropdownSection.innerHTML = '<label for="summaryModelDropdown" style="font-weight:600; margin-right:8px;">Regenerate summary with model:</label><select id="summaryModelDropdown"></select><button id="summaryModelSubmitBtn" style="margin-left:8px; padding:4px 12px; font-size:14px; font-weight:600; background:#4CAF50; color:#fff; border:none; border-radius:4px; cursor:pointer;">Submit</button>';
+                        voiceResponseContent.appendChild(dropdownSection);
+                    }
+                    const dropdown = document.getElementById('summaryModelDropdown');
+                    if (dropdown) {
+                        dropdown.innerHTML = '';
                         if (window.modelsWithInfo && window.modelsWithInfo.length > 0) {
                             window.modelsWithInfo.forEach(modelInfo => {
                                 const opt = document.createElement('option');
@@ -4785,145 +4796,43 @@
                             });
                         }
                         dropdown.title = 'Pick a model to regenerate summary';
-                        dropdown.addEventListener('change', function() {
-                            regenerateSummaryWithModel(dropdown.value);
-                        });
-                        dropdownContainer.appendChild(dropdown);
+                        // No onchange handler, only submit button will trigger
+                    }
+                    // Add submit button handler
+                    const submitBtn = document.getElementById('summaryModelSubmitBtn');
+                    if (submitBtn && dropdown) {
+                        submitBtn.onclick = function() {
+                            if (typeof window.regenerateSummaryWithModel === 'function') {
+                                window.regenerateSummaryWithModel(dropdown.value);
+                            } else if (typeof regenerateSummaryWithModel === 'function') {
+                                regenerateSummaryWithModel(dropdown.value);
+                            } else {
+                                // No popup, just silently do nothing or log
+                                // (removed console.warn for user-facing cleanliness)
+                            }
+                        };
                     }
                 }
                 if (summaryContent) {
+                    // Defensive: null check for summaryContent
+                    if (!summaryContent) return;
                     console.log('📝 Updating UI with chunk, total length now:', window.currentSummaryContent.length);
-                    
-                    // Apply real-time formatting to the accumulated content
-                    let displayContent = window.currentSummaryContent;
-                    
-                    // Only apply markdown formatting if we have substantial content to avoid breaking mid-word
-                    if (displayContent.length > 10 && (displayContent.includes('**') || displayContent.includes('*') || 
-                        displayContent.includes('```') || displayContent.includes('#') ||
-                        displayContent.includes('- ') || /^\d+\.\s/.test(displayContent))) {
-                        
-                        try {
-                            displayContent = formatResponseText(displayContent);
-                        } catch (error) {
-                            console.log('📝 Formatting error during streaming, using raw text:', error);
-                            displayContent = window.currentSummaryContent;
-                        }
-                    }
-                    
-                    // BYPASS ALL CSS - Just show raw text to verify content exists
-                    if (window.currentSummaryContent && window.currentSummaryContent.length > 50) {
-                        // Remove the annoying alert and just show raw text
-                        console.log('🔍 BYPASSING CSS - Raw content length:', window.currentSummaryContent.length);
-                        
-                        // Create a simple text node with no styling
-                        summaryContent.innerHTML = '';
-                        const textNode = document.createTextNode('RAW SUMMARY: ' + window.currentSummaryContent);
-                        summaryContent.appendChild(textNode);
-                        
-                        // Make it super visible with basic styling
-                        summaryContent.style.cssText = `
-                            background: red !important;
-                            color: white !important;
-                            padding: 20px !important;
-                            font-size: 16px !important;
-                            border: 5px solid blue !important;
-                            margin: 20px !important;
-                            display: block !important;
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                            position: relative !important;
-                            z-index: 9999 !important;
-                            width: 90% !important;
-                            height: auto !important;
-                            overflow: visible !important;
-                        `;
-                        
-                        // STOP HERE - don't overwrite with formatted content
-                        console.log('✅ Raw text displayed, skipping formatted update');
-                        return;
-                    }
-                    
-                    // Update the content immediately with streaming indicator
-                    summaryContent.innerHTML = `
-                        <div class="summary-text streaming" style="position: relative; color: white !important; background: rgba(0,0,0,0.3); padding: 10px; font-size: 14px !important; line-height: 1.5 !important;">
-                            ${displayContent}
-                            <span class="streaming-cursor" style="animation: blink 1s infinite; color: #4CAF50; font-weight: bold;">▋</span>
-                        </div>
-                    `;
-                    
-                    // Debug: Log what content we're actually putting in the DOM
-                    console.log('🔍 Actual HTML being inserted:', summaryContent.innerHTML.substring(0, 200) + '...');
-                    console.log('🔍 Display content preview:', displayContent.substring(0, 100) + '...');
-                    
-                    // Debug: Check computed styles of the content
-                    setTimeout(() => {
-                        const textDiv = summaryContent.querySelector('.summary-text');
-                        if (textDiv) {
-                            const styles = window.getComputedStyle(textDiv);
-                            console.log('🔍 Text div computed styles:', {
-                                color: styles.color,
-                                backgroundColor: styles.backgroundColor,
-                                fontSize: styles.fontSize,
-                                display: styles.display,
-                                visibility: styles.visibility,
-                                opacity: styles.opacity,
-                                textContent: textDiv.textContent.substring(0, 50) + '...'
-                            });
-                        }
-                    }, 50);
-                    
-                    // Force immediate display update
-                    summaryContent.style.display = 'block';
-                    
-                    // Auto-scroll to bottom to show new content
-                    summaryContent.scrollTop = summaryContent.scrollHeight;
-                    
-                    // Ensure summary section is visible using proper show/hide classes
-                    const summarySection = document.getElementById('aiSummarySection');
-                    if (summarySection) {
-                        summarySection.classList.remove('hide');
-                        summarySection.classList.add('show');
-                        console.log('✅ Summary section made visible with classes:', summarySection.classList.toString());
-                        
-                        // Double-check visibility
-                        const computedStyle = window.getComputedStyle(summarySection);
-                        console.log('🔍 Summary section computed display:', computedStyle.display);
-                        
-                        // Debug: Check section position and viewport
-                        const rect = summarySection.getBoundingClientRect();
-                        console.log('🔍 Summary section position:', {
-                            top: rect.top,
-                            bottom: rect.bottom,
-                            left: rect.left,
-                            right: rect.right,
-                            width: rect.width,
-                            height: rect.height,
-                            viewportHeight: window.innerHeight,
-                            isInViewport: isElementInViewport(summarySection)
-                        });
-                        
-                        // Force immediate scroll to summary section with every chunk
-                        setTimeout(() => {
-                            summarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            console.log('📍 Auto-scrolled to summary section');
-                            
-                            // Add temporary visual highlight to make it obvious
-                            summarySection.style.border = '3px solid #ff4444';
-                            summarySection.style.boxShadow = '0 0 20px rgba(255, 68, 68, 0.5)';
-                            setTimeout(() => {
-                                summarySection.style.border = '';
-                                summarySection.style.boxShadow = '';
-                            }, 2000);
-                        }, 100);
-                    }
-                    
-                    // Scroll section into view if not visible (backup)
-                    if (summarySection && !isElementInViewport(summarySection)) {
-                        summarySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        console.log('📍 Forced scroll - section was out of viewport');
-                    }
-                    
-                    console.log('✅ UI updated with streaming content, display length:', summaryContent.innerHTML.length);
+                    // ...existing code...
+// Ensure regenerateSummaryWithModel is globally accessible
+if (typeof window !== 'undefined' && typeof regenerateSummaryWithModel === 'function') {
+    window.regenerateSummaryWithModel = regenerateSummaryWithModel;
+}
+
+// Remove any test/debug popups globally
+window.regenerateSummaryWithModel = function(modelName) {
+    // If the real function exists, call it
+    if (typeof window._realRegenerateSummaryWithModel === 'function') {
+        window._realRegenerateSummaryWithModel(modelName);
+        return;
+    }
+    // Otherwise, do nothing (no alert, no popup)
+    // (If you want to add your real implementation, assign it to window._realRegenerateSummaryWithModel)
+};
                 } else {
                     console.error('❌ summaryContent element not found!');
                 }
