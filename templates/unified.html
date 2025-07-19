@@ -2761,13 +2761,18 @@
             display: inline-block;
             vertical-align: middle;
         }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
 
         .ai-summary-section.show {
-            display: block;
+            display: block !important;
         }
 
         .ai-summary-section.hide {
-            display: none;
+            display: none !important;
         }
 
         /* Image to Text Styles */
@@ -3761,6 +3766,8 @@
     </div>
 
     <script>
+        // Global variable for cursor position tracking in unified input
+        let currentCursorPosition = 0;
         // Initialize Socket.IO
         const socket = io();
         let sessionId = null;
@@ -4685,12 +4692,37 @@
             if (data.session_id === sessionId && activeTab === 'voice') {
                 console.log('📝 Summary generation started:', data);
                 
-                // First show the summary section, then show loading
-                showSummarySection();
-                showSummaryLoading(data.model);
-                
                 // Clear any previous summary content
                 window.currentSummaryContent = '';
+                
+                // First show the summary section
+                showSummarySection();
+                
+                // Then show loading state
+                showSummaryLoading(data.model);
+                
+                // Prepare the content area for streaming
+                const summaryContent = document.getElementById('summaryContent');
+                if (summaryContent) {
+                    // Replace loading with empty streaming container
+                    setTimeout(() => {
+                        summaryContent.innerHTML = `
+                            <div class="summary-text streaming" style="position: relative; min-height: 40px;">
+                                <span class="streaming-cursor" style="animation: blink 1s infinite; color: #4CAF50; font-weight: bold;">▋</span>
+                                <div style="margin-top: 10px; font-size: 0.9em; opacity: 0.7; color: #4CAF50;">
+                                    🔄 Streaming summary from ${data.model}...
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Ensure visibility
+                        summaryContent.style.display = 'block';
+                        summaryContent.style.visibility = 'visible';
+                        summaryContent.style.opacity = '1';
+                        
+                        console.log('✅ Prepared streaming container for summary');
+                    }, 1000); // Give a moment for loading state to be visible
+                }
             }
         });
 
@@ -4698,35 +4730,167 @@
             if (data.session_id === sessionId && activeTab === 'voice') {
                 console.log('📝 Summary chunk received:', data.chunk ? data.chunk.substring(0, 50) + '...' : 'empty chunk');
                 
-                // Handle streaming summary content
+                // Initialize streaming content if not exists
                 if (!window.currentSummaryContent) {
                     window.currentSummaryContent = '';
                 }
                 
+                // Add the new chunk to accumulated content
                 window.currentSummaryContent += data.chunk;
                 
-                // Update summary display with streaming content
+                // IMMEDIATELY update the UI with every single chunk
                 const summaryContent = document.getElementById('summaryContent');
+                // Also update the main voice response area with the summary
+                const voiceResponseContent = document.getElementById('voiceResponseContent');
+                if (voiceResponseContent && window.currentSummaryContent.length > 10) {
+                    let summaryDiv = document.getElementById('inlineSummaryBox');
+                    if (!summaryDiv) {
+                        summaryDiv = document.createElement('div');
+                        summaryDiv.id = 'inlineSummaryBox';
+                        summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
+                        summaryDiv.innerHTML = '<b>Summary:</b> <span id="inlineSummaryText"></span>';
+                        voiceResponseContent.appendChild(summaryDiv);
+                    }
+                    const inlineSummaryText = document.getElementById('inlineSummaryText');
+                    if (inlineSummaryText) {
+                        inlineSummaryText.textContent = window.currentSummaryContent;
+                    }
+                }
                 if (summaryContent) {
-                    let formattedContent = window.currentSummaryContent;
+                    console.log('📝 Updating UI with chunk, total length now:', window.currentSummaryContent.length);
                     
-                    // Apply formatting if needed
-                    if (formattedContent.includes('**') || formattedContent.includes('*') || 
-                        formattedContent.includes('```') || formattedContent.includes('#') ||
-                        formattedContent.includes('- ') || /^\d+\.\s/.test(formattedContent)) {
-                        formattedContent = formatResponseText(formattedContent);
+                    // Apply real-time formatting to the accumulated content
+                    let displayContent = window.currentSummaryContent;
+                    
+                    // Only apply markdown formatting if we have substantial content to avoid breaking mid-word
+                    if (displayContent.length > 10 && (displayContent.includes('**') || displayContent.includes('*') || 
+                        displayContent.includes('```') || displayContent.includes('#') ||
+                        displayContent.includes('- ') || /^\d+\.\s/.test(displayContent))) {
+                        
+                        try {
+                            displayContent = formatResponseText(displayContent);
+                        } catch (error) {
+                            console.log('📝 Formatting error during streaming, using raw text:', error);
+                            displayContent = window.currentSummaryContent;
+                        }
                     }
                     
-                    summaryContent.innerHTML = `<div class="summary-text streaming">${formattedContent}</div>`;
+                    // BYPASS ALL CSS - Just show raw text to verify content exists
+                    if (window.currentSummaryContent && window.currentSummaryContent.length > 50) {
+                        // Remove the annoying alert and just show raw text
+                        console.log('🔍 BYPASSING CSS - Raw content length:', window.currentSummaryContent.length);
+                        
+                        // Create a simple text node with no styling
+                        summaryContent.innerHTML = '';
+                        const textNode = document.createTextNode('RAW SUMMARY: ' + window.currentSummaryContent);
+                        summaryContent.appendChild(textNode);
+                        
+                        // Make it super visible with basic styling
+                        summaryContent.style.cssText = `
+                            background: red !important;
+                            color: white !important;
+                            padding: 20px !important;
+                            font-size: 16px !important;
+                            border: 5px solid blue !important;
+                            margin: 20px !important;
+                            display: block !important;
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            position: relative !important;
+                            z-index: 9999 !important;
+                            width: 90% !important;
+                            height: auto !important;
+                            overflow: visible !important;
+                        `;
+                        
+                        // STOP HERE - don't overwrite with formatted content
+                        console.log('✅ Raw text displayed, skipping formatted update');
+                        return;
+                    }
                     
-                    // Auto-scroll to bottom
+                    // Update the content immediately with streaming indicator
+                    summaryContent.innerHTML = `
+                        <div class="summary-text streaming" style="position: relative; color: white !important; background: rgba(0,0,0,0.3); padding: 10px; font-size: 14px !important; line-height: 1.5 !important;">
+                            ${displayContent}
+                            <span class="streaming-cursor" style="animation: blink 1s infinite; color: #4CAF50; font-weight: bold;">▋</span>
+                        </div>
+                    `;
+                    
+                    // Debug: Log what content we're actually putting in the DOM
+                    console.log('🔍 Actual HTML being inserted:', summaryContent.innerHTML.substring(0, 200) + '...');
+                    console.log('🔍 Display content preview:', displayContent.substring(0, 100) + '...');
+                    
+                    // Debug: Check computed styles of the content
+                    setTimeout(() => {
+                        const textDiv = summaryContent.querySelector('.summary-text');
+                        if (textDiv) {
+                            const styles = window.getComputedStyle(textDiv);
+                            console.log('🔍 Text div computed styles:', {
+                                color: styles.color,
+                                backgroundColor: styles.backgroundColor,
+                                fontSize: styles.fontSize,
+                                display: styles.display,
+                                visibility: styles.visibility,
+                                opacity: styles.opacity,
+                                textContent: textDiv.textContent.substring(0, 50) + '...'
+                            });
+                        }
+                    }, 50);
+                    
+                    // Force immediate display update
+                    summaryContent.style.display = 'block';
+                    
+                    // Auto-scroll to bottom to show new content
                     summaryContent.scrollTop = summaryContent.scrollHeight;
                     
-                    // Also scroll the summary section into view if needed
+                    // Ensure summary section is visible using proper show/hide classes
                     const summarySection = document.getElementById('aiSummarySection');
-                    if (summarySection && !isElementInViewport(summarySection)) {
-                        summarySection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    if (summarySection) {
+                        summarySection.classList.remove('hide');
+                        summarySection.classList.add('show');
+                        console.log('✅ Summary section made visible with classes:', summarySection.classList.toString());
+                        
+                        // Double-check visibility
+                        const computedStyle = window.getComputedStyle(summarySection);
+                        console.log('🔍 Summary section computed display:', computedStyle.display);
+                        
+                        // Debug: Check section position and viewport
+                        const rect = summarySection.getBoundingClientRect();
+                        console.log('🔍 Summary section position:', {
+                            top: rect.top,
+                            bottom: rect.bottom,
+                            left: rect.left,
+                            right: rect.right,
+                            width: rect.width,
+                            height: rect.height,
+                            viewportHeight: window.innerHeight,
+                            isInViewport: isElementInViewport(summarySection)
+                        });
+                        
+                        // Force immediate scroll to summary section with every chunk
+                        setTimeout(() => {
+                            summarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            console.log('📍 Auto-scrolled to summary section');
+                            
+                            // Add temporary visual highlight to make it obvious
+                            summarySection.style.border = '3px solid #ff4444';
+                            summarySection.style.boxShadow = '0 0 20px rgba(255, 68, 68, 0.5)';
+                            setTimeout(() => {
+                                summarySection.style.border = '';
+                                summarySection.style.boxShadow = '';
+                            }, 2000);
+                        }, 100);
                     }
+                    
+                    // Scroll section into view if not visible (backup)
+                    if (summarySection && !isElementInViewport(summarySection)) {
+                        summarySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        console.log('📍 Forced scroll - section was out of viewport');
+                    }
+                    
+                    console.log('✅ UI updated with streaming content, display length:', summaryContent.innerHTML.length);
+                } else {
+                    console.error('❌ summaryContent element not found!');
                 }
             }
         });
@@ -4753,9 +4917,9 @@
             if (data.session_id === sessionId && activeTab === 'voice') {
                 console.log('📝 Summary generation completed:', data);
                 
-                // DON'T clear the streaming content if it exists and matches
-                const currentStreamingContent = window.currentSummaryContent;
-                const finalSummary = data.summary;
+                // Get current streaming content and final summary
+                const currentStreamingContent = window.currentSummaryContent || '';
+                const finalSummary = data.summary || '';
                 
                 // Check if summary section is visible
                 const summarySection = document.getElementById('aiSummarySection');
@@ -4763,16 +4927,22 @@
                 console.log('🔍 Summary section visible:', summarySection ? !summarySection.classList.contains('hide') : 'not found');
                 console.log('🔍 Summary content element:', summaryContent ? 'found' : 'not found');
                 
-                // If we have streaming content that matches the final content, just update the styling
-                if (currentStreamingContent && currentStreamingContent.trim() === finalSummary.trim()) {
-                    console.log('📝 Streaming content matches final - updating styling only');
+                // Always preserve the streaming content if it exists and has substance
+                if (currentStreamingContent && currentStreamingContent.trim().length > 10) {
+                    console.log('📝 Using streaming content (length:', currentStreamingContent.length, ')');
                     
-                    // Just remove the streaming class and add completed class
+                    // Just remove the streaming class and cursor, keep the content
                     const streamingDiv = summaryContent.querySelector('.summary-text.streaming');
                     if (streamingDiv) {
+                        // Remove streaming cursor
+                        const cursor = streamingDiv.querySelector('.streaming-cursor');
+                        if (cursor) cursor.remove();
+                        
+                        // Remove streaming class and add completed class
                         streamingDiv.classList.remove('streaming');
                         streamingDiv.classList.add('completed');
-                        console.log('✅ Updated streaming content to completed');
+                        
+                        console.log('✅ Converted streaming content to completed');
                     }
                     
                     // Update meta information
@@ -4788,15 +4958,15 @@
                         console.log('✅ Summary meta updated');
                     }
                 } else {
-                    console.log('📝 No matching streaming content - using displaySummary');
+                    console.log('📝 No valid streaming content, using final summary');
                     
                     // Clear the streaming content variable
                     window.currentSummaryContent = '';
                     
-                    // Display the completed summary
+                    // Display the completed summary using displaySummary function
                     const summaryData = {
                         model: data.model_used || data.model,
-                        summary: data.summary,
+                        summary: finalSummary,
                         response_time: data.elapsed_time,
                         models_analyzed: data.models_analyzed || data.response_count || 0
                     };
@@ -4805,9 +4975,19 @@
                     displaySummary(summaryData);
                 }
                 
-                // Verify content was set
+                // Verify final content
                 if (summaryContent) {
-                    console.log('✅ Summary content updated, innerHTML length:', summaryContent.innerHTML.length);
+                    console.log('✅ Final summary content length:', summaryContent.innerHTML.length);
+                    
+                    // Ensure content is visible
+                    summaryContent.style.display = 'block';
+                    
+                    // Final scroll to show completed content
+                    setTimeout(() => {
+                        if (summarySection) {
+                            summarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 500);
                 }
             }
         });
@@ -4837,6 +5017,22 @@
             }
         });
 
+                    // Also update the main voice response area with the summary (final)
+                    const voiceResponseContent = document.getElementById('voiceResponseContent');
+                    if (voiceResponseContent && currentStreamingContent.length > 10) {
+                        let summaryDiv = document.getElementById('inlineSummaryBox');
+                        if (!summaryDiv) {
+                            summaryDiv = document.createElement('div');
+                            summaryDiv.id = 'inlineSummaryBox';
+                            summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
+                            summaryDiv.innerHTML = '<b>Summary:</b> <span id="inlineSummaryText"></span>';
+                            voiceResponseContent.appendChild(summaryDiv);
+                        }
+                        const inlineSummaryText = document.getElementById('inlineSummaryText');
+                        if (inlineSummaryText) {
+                            inlineSummaryText.textContent = currentStreamingContent;
+                        }
+                    }
         socket.on('image_processed', (data) => {
             if (data.session_id === sessionId && activeTab === 'image') {
                 console.log('Image processed:', data);
@@ -4848,6 +5044,22 @@
                 });
                 
                 // Update display
+                    // Also update the main voice response area with the summary (final, fallback)
+                    const voiceResponseContent = document.getElementById('voiceResponseContent');
+                    if (voiceResponseContent && finalSummary.length > 10) {
+                        let summaryDiv = document.getElementById('inlineSummaryBox');
+                        if (!summaryDiv) {
+                            summaryDiv = document.createElement('div');
+                            summaryDiv.id = 'inlineSummaryBox';
+                            summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
+                            summaryDiv.innerHTML = '<b>Summary:</b> <span id="inlineSummaryText"></span>';
+                            voiceResponseContent.appendChild(summaryDiv);
+                        }
+                        const inlineSummaryText = document.getElementById('inlineSummaryText');
+                        if (inlineSummaryText) {
+                            inlineSummaryText.textContent = finalSummary;
+                        }
+                    }
                 updateExtractionDisplay();
                 
                 // Update progress if needed
@@ -6370,7 +6582,7 @@
         let isUnifiedRecording = false;
         let unifiedRecognition = null;
         let voiceStreamingText = '';
-        let currentCursorPosition = 0; // Track cursor position across recording sessions
+        // (moved to top for global scope)
 
         function addVoiceInput() {
             if (!recognition) {
@@ -7370,28 +7582,23 @@ def handle_generate_summary(data):
                 summaryContent.innerHTML = contentHtml;
                 console.log('✅ Summary content updated, length:', contentHtml.length);
                 
-                // Force visibility and styling to ensure it's displayed
+                // Ensure content container is visible
                 summaryContent.style.display = 'block';
-                summaryContent.style.visibility = 'visible';
-                summaryContent.style.opacity = '1';
                 
                 // Auto-scroll to bottom to show the complete summary
                 summaryContent.scrollTop = summaryContent.scrollHeight;
                 
-                // Also ensure the summary section is fully visible
+                // Ensure the summary section uses proper show class
                 const summarySection = document.getElementById('aiSummarySection');
                 if (summarySection) {
-                    summarySection.style.display = 'block';
-                    summarySection.style.visibility = 'visible';
-                    summarySection.style.opacity = '1';
                     summarySection.classList.remove('hide');
                     summarySection.classList.add('show');
                     console.log('🔍 Summary section classes after update:', summarySection.classList.toString());
                     
-                    // Force scroll into view
+                    // Scroll into view
                     setTimeout(() => {
                         summarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        console.log('📍 Forced scroll to summary section');
+                        console.log('📍 Scrolled to summary section');
                     }, 200);
                 }
                 
