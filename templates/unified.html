@@ -1815,10 +1815,207 @@
         }
 
         .voice-response-content {
+            padding: 24px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-response-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .voice-response-content .response-text {
+            background: #ffffff;
             padding: 20px;
-            background: #f8f9fa;
             border-radius: 8px;
-            border: 1px solid #ddd;
+            border-left: 4px solid #007bff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-top: 12px;
+            position: relative;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .voice-response-content .response-text::before {
+            content: '🤖';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            background: #007bff;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+        }
+
+        .voice-response-content .response-text h1,
+        .voice-response-content .response-text h2,
+        .voice-response-content .response-text h3,
+        .voice-response-content .response-text h4 {
+            color: #2c3e50;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .voice-response-content .response-text h1 {
+            font-size: 1.5em;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+
+        .voice-response-content .response-text h2 {
+            font-size: 1.3em;
+            color: #495057;
+        }
+
+        .voice-response-content .response-text h3 {
+            font-size: 1.2em;
+            color: #6c757d;
+        }
+
+        .voice-response-content .response-text p {
+            margin-bottom: 16px;
+            color: #495057;
+            text-align: justify;
+        }
+
+        .voice-response-content .response-text ul,
+        .voice-response-content .response-text ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .voice-response-content .response-text li {
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .voice-response-content .response-text code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+            border: 1px solid #dee2e6;
+        }
+
+        .voice-response-content .response-text pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+            border-left: 4px solid #4299e1;
+        }
+
+        .voice-response-content .response-text blockquote {
+            background: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            padding: 16px;
+            margin: 16px 0;
+            font-style: italic;
+            color: #6c757d;
+        }
+
+        .voice-response-content .response-text strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .voice-response-content .response-text em {
+            color: #495057;
+            font-style: italic;
+        }
+
+        .voice-response-content .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: #6c757d;
+            font-size: 1.1em;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+            animation: pulse 2s infinite;
+        }
+
+        .voice-response-content .loading::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes typing {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .voice-response-content .response-text {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .voice-response-content .response-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .voice-response-content .response-text th,
+        .voice-response-content .response-text td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .voice-response-content .response-text th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
         }
 
         /* Image to Text Styles */
@@ -2623,23 +2820,27 @@
                 if (activeTab === 'qa') {
                     appendToResponse(data.model, data.chunk);
                 } else if (activeTab === 'voice') {
-                    // Handle voice streaming
+                    // Handle voice streaming with text accumulation for better formatting
                     const responseContent = document.getElementById('voiceResponseContent');
                     if (responseContent) {
+                        // Accumulate the raw text
+                        voiceStreamingText += data.chunk;
+                        
                         let currentContent = responseContent.innerHTML;
                         if (currentContent.includes('AI is thinking')) {
                             // First chunk - replace the thinking message
-                            responseContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                            responseContent.innerHTML = `<div class="response-text">${voiceStreamingText}</div>`;
                             console.log('✅ Voice: Created new response-text div with first chunk');
                         } else {
-                            // Subsequent chunks - append to existing content
+                            // Subsequent chunks - update with accumulated text
                             const responseText = responseContent.querySelector('.response-text');
                             if (responseText) {
-                                responseText.innerHTML += data.chunk;
-                                console.log('✅ Voice: Appended chunk to existing response-text');
+                                // Display the accumulated text as-is for real-time streaming effect
+                                responseText.innerHTML = voiceStreamingText;
+                                console.log('✅ Voice: Updated response with accumulated text');
                             } else {
                                 // Fallback: create response text div if it doesn't exist
-                                responseContent.innerHTML = `<div class="response-text">${data.chunk}</div>`;
+                                responseContent.innerHTML = `<div class="response-text">${voiceStreamingText}</div>`;
                                 console.log('✅ Voice: Created fallback response-text div');
                             }
                         }
@@ -2691,10 +2892,22 @@
                 if (activeTab === 'qa') {
                     updateResponseStatus(data.model, 'completed', data.elapsed_time);
                 } else if (activeTab === 'voice') {
-                    // Update voice completion status
+                    // Update voice completion status and apply final formatting
                     const responseMeta = document.getElementById('voiceResponseMeta');
+                    const responseContent = document.getElementById('voiceResponseContent');
+                    
                     if (responseMeta) {
                         responseMeta.innerHTML = `<span class="status-indicator status-success"></span>Response from ${data.model} (${data.elapsed_time || 'N/A'})`;
+                    }
+                    
+                    // Apply final formatting to the accumulated text
+                    if (responseContent && voiceStreamingText) {
+                        const responseText = responseContent.querySelector('.response-text');
+                        if (responseText) {
+                            const formattedText = formatResponseText(voiceStreamingText);
+                            responseText.innerHTML = formattedText;
+                            console.log('✅ Voice: Applied final formatting to completed response');
+                        }
                     }
                 } else if (activeTab === 'image') {
                     // Update image completion status
@@ -4256,6 +4469,7 @@
 
         function clearVoiceTranscription() {
             transcribedText = '';
+            voiceStreamingText = ''; // Reset accumulated text
             updateTranscriptionDisplay();
             document.getElementById('voiceResponseSection').classList.remove('show');
             updateVoiceStatus('🔴', 'Ready to record');
@@ -4264,6 +4478,56 @@
         function updateVoiceStatus(indicator, text) {
             document.querySelector('.voice-status .status-indicator').textContent = indicator;
             document.querySelector('.voice-status .status-text').textContent = text;
+        }
+
+        function formatResponseText(text) {
+            // Enhanced formatting for AI responses in voice tab
+            let formatted = text;
+            
+            // Clean up any extra whitespace and normalize line breaks
+            formatted = formatted.trim();
+            
+            // Convert markdown-style formatting to HTML
+            // Headers (but only if they start at beginning of line)
+            formatted = formatted.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+            formatted = formatted.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+            formatted = formatted.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            
+            // Bold and italic
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Code blocks (triple backticks)
+            formatted = formatted.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            
+            // Inline code
+            formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Lists (simple bullet points) - only if at start of line
+            formatted = formatted.replace(/^[\s]*[-•*]\s+(.*$)/gm, '<li>$1</li>');
+            
+            // Numbered lists - only if at start of line
+            formatted = formatted.replace(/^[\s]*\d+\.\s+(.*$)/gm, '<li>$1</li>');
+            
+            // Group consecutive list items
+            formatted = formatted.replace(/(<li>.*?<\/li>[\s\n]*)+/gs, function(match) {
+                return '<ul>' + match + '</ul>';
+            });
+            
+            // Convert double line breaks to paragraph breaks
+            formatted = formatted.replace(/\n\s*\n/g, '</p><p>');
+            
+            // Wrap content in paragraphs if not already wrapped in block elements
+            if (!formatted.match(/^<(h\d|ul|ol|pre|div)/)) {
+                formatted = '<p>' + formatted + '</p>';
+            }
+            
+            // Clean up empty paragraphs and extra whitespace
+            formatted = formatted.replace(/<p>\s*<\/p>/g, '');
+            formatted = formatted.replace(/\s+/g, ' '); // Replace multiple spaces with single space
+            formatted = formatted.replace(/>\s+</g, '><'); // Remove whitespace between tags
+            
+            return formatted;
         }
 
         function updateTranscriptionDisplay() {
@@ -4283,6 +4547,9 @@
             document.querySelector('.transcription-area').classList.remove('recording');
         }
 
+        // Voice streaming variables
+        let voiceStreamingText = '';
+
         function processVoiceWithAI(text, model) {
             const responseSection = document.getElementById('voiceResponseSection');
             const responseMeta = document.getElementById('voiceResponseMeta');
@@ -4291,6 +4558,9 @@
             responseSection.classList.add('show');
             responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${model}...`;
             responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
+            
+            // Reset streaming text accumulator
+            voiceStreamingText = '';
             
             // Send to backend for streaming processing using the same handler as Q&A tab
             socket.emit('query_models', {
