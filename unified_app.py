@@ -2303,6 +2303,313 @@ async def process_image_ai_explanation(prompt, model_name, session_id):
             'session_id': session_id
         }, room=session_id)
 
+# ========== AI SUMMARY ENDPOINTS ==========
+
+@socketio.on('generate_summary')
+def handle_generate_summary(data):
+    """Handle AI summary generation request."""
+    print("📝 Summary generation requested!")
+    print(f"📝 Data received: {data}")
+    
+    session_id = data.get('session_id') or request.sid
+    model = data.get('model', 'llama3.2')  # Default to llama3.2 if no model specified
+    summary_data = data.get('summary_data', {})
+    
+    try:
+        # Validate input data
+        if not summary_data:
+            socketio.emit('summary_error', {
+                'session_id': session_id,
+                'error': 'No summary data provided'
+            }, room=session_id)
+            return
+        
+        question = summary_data.get('question', '')
+        responses = summary_data.get('responses', [])
+        models_used = summary_data.get('models_used', [])
+        
+        if not question or not responses:
+            socketio.emit('summary_error', {
+                'session_id': session_id,
+                'error': 'Incomplete summary data - missing question or responses'
+            }, room=session_id)
+            return
+        
+        print(f"📝 Processing summary for question: '{question}'")
+        print(f"📝 Number of responses: {len(responses)}")
+        print(f"📝 Models used: {models_used}")
+        print(f"📝 Using model for summary: {model}")
+        
+        # Start processing in background
+        thread = threading.Thread(
+            target=process_summary_async,
+            args=(session_id, model, question, responses, models_used)
+        )
+        thread.daemon = True
+        thread.start()
+        
+    except Exception as e:
+        print(f"❌ Error handling summary request: {e}")
+        socketio.emit('summary_error', {
+            'session_id': session_id,
+            'error': f'Error processing summary request: {str(e)}'
+        }, room=session_id)
+
+def process_summary_async(session_id: str, model: str, question: str, responses: list, models_used: list):
+    """Process AI summary generation asynchronously."""
+    try:
+        # Run in new event loop for thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        loop.run_until_complete(
+            generate_ai_summary(session_id, model, question, responses, models_used)
+        )
+        
+        loop.close()
+        
+    except Exception as e:
+        print(f"❌ Error in summary processing thread: {e}")
+        socketio.emit('summary_error', {
+            'session_id': session_id,
+            'error': f'Error generating summary: {str(e)}'
+        }, room=session_id)
+
+async def generate_ai_summary(session_id: str, model: str, question: str, responses: list, models_used: list):
+    """Generate AI-powered summary of model responses."""
+    try:
+        print(f"📝 Starting AI summary generation with model: {model}")
+        
+        # Emit summary started
+        socketio.emit('summary_started', {
+            'session_id': session_id,
+            'model': model,
+            'response_count': len(responses)
+        }, room=session_id)
+        
+        # Build comprehensive prompt for summary
+        summary_prompt = build_summary_prompt(question, responses, models_used)
+        print(f"📝 Built summary prompt ({len(summary_prompt)} characters)")
+        
+        # Check if model is available
+        available_models = model_manager.get_available_models()
+        if model not in available_models:
+            print(f"⚠️ Model {model} not available, falling back to manual summary")
+            manual_summary = create_manual_summary_text(question, responses, models_used)
+            
+            socketio.emit('summary_completed', {
+                'session_id': session_id,
+                'summary': manual_summary,
+                'model_used': 'Manual Fallback',
+                'is_manual': True
+            }, room=session_id)
+            return
+        
+        # Generate summary using the specified model
+        print(f"📝 Generating summary using model: {model}")
+        
+        accumulated_summary = ""
+        
+        # Use streaming generation for real-time updates
+        try:
+            async def summary_callback(model_name, chunk, is_complete):
+                nonlocal accumulated_summary
+                if chunk and not is_complete:
+                    accumulated_summary += chunk
+                    
+                    # Send chunk to frontend
+                    socketio.emit('summary_chunk_received', {
+                        'session_id': session_id,
+                        'chunk': chunk,
+                        'accumulated_text': accumulated_summary
+                    }, room=session_id)
+            
+            # Use the existing streaming method
+            result = await model_manager.query_model_streaming(
+                model_name=model,
+                prompt=summary_prompt,
+                callback=summary_callback
+            )
+            
+            # If the result has content, use it
+            if result and result.response:
+                accumulated_summary = result.response
+            
+        except Exception as streaming_error:
+            print(f"⚠️ Streaming failed, trying non-streaming: {streaming_error}")
+            # Fallback to non-streaming
+            result = await model_manager.query_model(
+                model_name=model,
+                prompt=summary_prompt,
+                stream=False
+            )
+            
+            if result and result.response:
+                accumulated_summary = result.response
+                # Send the complete response as chunks for frontend compatibility
+                socketio.emit('summary_chunk_received', {
+                    'session_id': session_id,
+                    'chunk': accumulated_summary,
+                    'accumulated_text': accumulated_summary
+                }, room=session_id)
+            else:
+                raise Exception(f"Model query failed: {result.error if result else 'No response'}")
+        
+        # Final summary completion
+        socketio.emit('summary_completed', {
+            'session_id': session_id,
+            'summary': accumulated_summary,
+            'model_used': model,
+            'response_count': len(responses),
+            'models_analyzed': models_used
+        }, room=session_id)
+        
+        print(f"📝 ✅ Summary generation completed ({len(accumulated_summary)} characters)")
+        
+    except Exception as e:
+        print(f"❌ Error generating AI summary: {e}")
+        
+        # Fallback to manual summary on error
+        try:
+            manual_summary = create_manual_summary_text(question, responses, models_used)
+            socketio.emit('summary_completed', {
+                'session_id': session_id,
+                'summary': manual_summary,
+                'model_used': f'{model} (failed, manual fallback)',
+                'is_manual': True,
+                'error_note': f'AI generation failed: {str(e)}'
+            }, room=session_id)
+        except Exception as fallback_error:
+            socketio.emit('summary_error', {
+                'session_id': session_id,
+                'error': f'Both AI and manual summary failed: {str(e)} | {str(fallback_error)}'
+            }, room=session_id)
+
+# Constants
+NO_CONTENT_MSG = 'No content available'
+
+def build_summary_prompt(question: str, responses: list, models_used: list) -> str:
+    """Build a comprehensive prompt for AI summary generation."""
+    
+    prompt = f"""Please analyze and summarize the following AI model responses to provide a comprehensive overview.
+
+**Original Question:** "{question}"
+
+**Models that responded:** {', '.join(models_used)} ({len(responses)} total responses)
+
+**Task:** Create a concise but thorough summary that:
+1. Identifies key points and common themes across responses
+2. Highlights any significant differences or unique perspectives
+3. Notes the overall quality and consistency of responses
+4. Provides a brief recommendation on which aspects were handled best
+
+**Model Responses to Analyze:**
+
+"""
+    
+    for i, response in enumerate(responses, 1):
+        model_name = response.get('model', f'Model {i}')
+        content = response.get('content', NO_CONTENT_MSG)
+        
+        # Truncate very long responses for the prompt
+        if len(content) > 1000:
+            content = content[:1000] + "... [truncated]"
+        
+        prompt += f"""
+**Response {i} - {model_name}:**
+{content}
+
+---
+"""
+    
+    prompt += """
+**Instructions for Summary:**
+- Keep the summary concise but informative (aim for 200-400 words)
+- Focus on practical insights and actionable information
+- Use clear, engaging language
+- Structure your response with clear sections if helpful
+- End with a brief recommendation or key takeaway
+
+Please provide your comprehensive summary now:"""
+    
+    return prompt
+
+def create_manual_summary_text(question: str, responses: list, models_used: list) -> str:
+    """Create a manual text summary when AI generation is not available."""
+    
+    summary_parts = []
+    
+    # Header
+    summary_parts.append(f"📊 **Summary Analysis** - {len(responses)} Model Responses")
+    summary_parts.append(f"**Question:** \"{question}\"")
+    summary_parts.append(f"**Models:** {', '.join(models_used)}")
+    summary_parts.append("")
+    
+    # Response analysis
+    if len(responses) > 1:
+        summary_parts.extend(_build_multi_response_analysis(responses))
+    else:
+        summary_parts.extend(_build_single_response_analysis(responses[0]))
+    
+    summary_parts.append("")
+    summary_parts.append("🚀 **Next Steps:**")
+    summary_parts.append("- Review the detailed responses above for comprehensive information")
+    summary_parts.append("- Ask follow-up questions if you need clarification on any points")
+    summary_parts.append("- Use 'Test Summary' to see AI-powered analysis when backend is fully connected")
+    
+    return "\n".join(summary_parts)
+
+def _build_multi_response_analysis(responses: list) -> list:
+    """Build analysis section for multiple responses."""
+    parts = []
+    
+    parts.append("🔍 **Response Comparison:**")
+    
+    for i, response in enumerate(responses, 1):
+        model_name = response.get('model', f'Model {i}')
+        content = response.get('content', NO_CONTENT_MSG)
+        word_count = len(content.split()) if content else 0
+        
+        # Get preview
+        preview = _get_content_preview(content)
+        parts.append(f"**{model_name}:** {word_count} words - {preview}")
+    
+    parts.append("")
+    parts.append("📈 **Key Insights:**")
+    parts.append("- Multiple AI models provided different perspectives on this question")
+    parts.append("- Compare the approaches and detail levels above")
+    parts.append("- Consider combining insights from different models for a comprehensive understanding")
+    
+    return parts
+
+def _build_single_response_analysis(response: dict) -> list:
+    """Build analysis section for single response."""
+    parts = []
+    
+    model_name = response.get('model', 'AI Model')
+    content = response.get('content', NO_CONTENT_MSG)
+    word_count = len(content.split()) if content else 0
+    
+    parts.append("📝 **Single Response Analysis:**")
+    parts.append(f"**{model_name}** provided a {word_count}-word response addressing the question.")
+    
+    if word_count > 0:
+        preview = content[:200] + '...' if len(content) > 200 else content
+        parts.append(f"**Response Preview:** {preview}")
+    
+    return parts
+
+def _get_content_preview(content: str) -> str:
+    """Get a preview of the content for summary."""
+    if not content:
+        return NO_CONTENT_MSG
+    
+    preview = content[:100] + "..." if len(content) > 100 else content
+    if '.' in preview and len(preview) > 50:
+        preview = preview.split('.')[0] + "."
+    
+    return preview
+
 # ========== MAIN APPLICATION ==========
 
 if __name__ == '__main__':
