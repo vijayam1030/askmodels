@@ -1808,6 +1808,122 @@
             background: #f8fff8;
         }
 
+        /* Edit & Submit Section Styles */
+        .edit-submit-section {
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+        }
+
+        .edit-submit-section.show {
+            display: block !important;
+        }
+
+        .edit-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .editable-textarea {
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+
+        .editable-textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .submit-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .text-stats {
+            font-size: 12px;
+            color: #6c757d;
+            text-align: right;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+
+        .char-count, .word-count {
+            font-weight: 500;
+        }
+
+        .keyboard-hints {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .keyboard-hints small {
+            color: #6c757d;
+            font-size: 11px;
+        }
+
+        .keyboard-hints kbd {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-size: 10px;
+            font-family: monospace;
+            color: #495057;
+        }
+
+        .submit-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .cancel-edit-btn {
+            padding: 12px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cancel-edit-btn:hover {
+            background: #5a6268;
+        }
+
         .voice-response-meta {
             font-size: 14px;
             color: #666;
@@ -2532,6 +2648,24 @@
                         <h3>📝 Live Transcription</h3>
                         <div class="transcription-area" id="transcriptionArea">
                             <div class="no-transcription">Click "Start Recording" to begin transcribing your speech...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="edit-submit-section" id="editSubmitSection" style="display: none;">
+                        <h3>✏️ Edit & Submit</h3>
+                        <div class="edit-controls">
+                            <textarea id="editableText" class="editable-textarea" placeholder="Edit your transcribed text here before submitting for AI analysis..."></textarea>
+                            <div class="text-stats" id="textStats">
+                                <span class="char-count">0 characters</span> • 
+                                <span class="word-count">0 words</span>
+                            </div>
+                            <div class="keyboard-hints">
+                                <small>💡 Tip: Press <kbd>Ctrl+Enter</kbd> to submit, <kbd>Esc</kbd> to cancel</small>
+                            </div>
+                            <div class="submit-controls">
+                                <button id="submitForAnalysis" class="submit-btn">🚀 Submit for Analysis</button>
+                                <button id="cancelEdit" class="cancel-edit-btn">❌ Cancel</button>
+                            </div>
                         </div>
                     </div>
                     
@@ -4424,6 +4558,30 @@
             document.getElementById('startRecordingBtn').addEventListener('click', startRecording);
             document.getElementById('stopRecordingBtn').addEventListener('click', stopRecording);
             document.getElementById('clearVoiceBtn').addEventListener('click', clearVoiceTranscription);
+            
+            // New edit and submit listeners
+            document.getElementById('submitForAnalysis').addEventListener('click', submitForAnalysis);
+            document.getElementById('cancelEdit').addEventListener('click', cancelEdit);
+            
+            // Update submit button state when text or model changes
+            document.getElementById('editableText').addEventListener('input', updateSubmitButtonState);
+            document.getElementById('voiceModelSelect').addEventListener('change', updateSubmitButtonState);
+            
+            // Keyboard shortcuts for the editable textarea
+            document.getElementById('editableText').addEventListener('keydown', function(e) {
+                // Ctrl+Enter or Cmd+Enter to submit
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!document.getElementById('submitForAnalysis').disabled) {
+                        submitForAnalysis();
+                    }
+                }
+                // Escape to cancel
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
         }
 
         function startRecording() {
@@ -4459,10 +4617,11 @@
             if (recognition && isRecording) {
                 recognition.stop();
                 
-                // Process the transcribed text with AI if a model is selected
-                const selectedModel = document.getElementById('voiceModelSelect').value;
-                if (selectedModel && transcribedText.trim()) {
-                    processVoiceWithAI(transcribedText.trim(), selectedModel);
+                // Show the edit section if we have transcribed text
+                if (transcribedText.trim()) {
+                    showEditSection();
+                } else {
+                    updateVoiceStatus('⚠️', 'No speech detected. Please try recording again.');
                 }
             }
         }
@@ -4471,7 +4630,89 @@
             transcribedText = '';
             voiceStreamingText = ''; // Reset accumulated text
             updateTranscriptionDisplay();
+            hideEditSection();
             document.getElementById('voiceResponseSection').classList.remove('show');
+            updateVoiceStatus('🔴', 'Ready to record');
+        }
+
+        function showEditSection() {
+            const editSection = document.getElementById('editSubmitSection');
+            const editableText = document.getElementById('editableText');
+            
+            // Populate the editable textarea with transcribed text
+            editableText.value = transcribedText.trim();
+            
+            // Show the edit section
+            editSection.classList.add('show');
+            editSection.style.display = 'block';
+            
+            // Focus on the textarea for immediate editing
+            editableText.focus();
+            
+            // Check if model is selected to enable/disable submit button
+            updateSubmitButtonState();
+            
+            updateVoiceStatus('✏️', 'Edit your text and click "Submit for Analysis"');
+        }
+
+        function hideEditSection() {
+            const editSection = document.getElementById('editSubmitSection');
+            editSection.classList.remove('show');
+            editSection.style.display = 'none';
+        }
+
+        function updateSubmitButtonState() {
+            const submitBtn = document.getElementById('submitForAnalysis');
+            const editableText = document.getElementById('editableText');
+            const selectedModel = document.getElementById('voiceModelSelect').value;
+            const textStats = document.getElementById('textStats');
+            
+            const text = editableText.value.trim();
+            const hasText = text.length > 0;
+            const hasModel = selectedModel !== '';
+            
+            // Update text statistics
+            const charCount = editableText.value.length;
+            const wordCount = text ? text.split(/\s+/).length : 0;
+            textStats.innerHTML = `<span class="char-count">${charCount} characters</span> • <span class="word-count">${wordCount} words</span>`;
+            
+            // Update submit button state
+            submitBtn.disabled = !hasText || !hasModel;
+            
+            if (!hasModel) {
+                submitBtn.textContent = '⚠️ Select a Model First';
+            } else if (!hasText) {
+                submitBtn.textContent = '⚠️ Enter Text First';
+            } else {
+                submitBtn.textContent = '🚀 Submit for Analysis';
+            }
+        }
+
+        function submitForAnalysis() {
+            const editableText = document.getElementById('editableText');
+            const selectedModel = document.getElementById('voiceModelSelect').value;
+            const textToAnalyze = editableText.value.trim();
+            
+            if (!textToAnalyze) {
+                alert('Please enter text to analyze');
+                return;
+            }
+            
+            if (!selectedModel) {
+                alert('Please select a model for analysis');
+                return;
+            }
+            
+            // Hide edit section and show processing
+            hideEditSection();
+            updateVoiceStatus('🔄', 'Processing with AI...');
+            
+            // Process with AI
+            processVoiceWithAI(textToAnalyze, selectedModel);
+        }
+
+        function cancelEdit() {
+            hideEditSection();
             updateVoiceStatus('🔴', 'Ready to record');
         }
 
