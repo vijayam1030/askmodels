@@ -731,6 +731,28 @@
             background: #f8f9ff;
         }
 
+        /* Voice Response Streaming */
+        .voice-response-content .response-text.streaming {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            transition: none; /* Disable transitions during streaming for smoother text flow */
+        }
+
+        .voice-response-content .response-text.streaming::after {
+            content: '▋';
+            animation: blink 1s infinite;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
         /* Enhanced Content Formatting */
         .response-content p {
             margin: 0 0 12px 0;
@@ -3048,6 +3070,8 @@
         let transcribedText = '';
         let isVoiceProcessing = false;
         let currentVoiceTask = null;
+        let voiceConversationHistory = []; // Store conversation history
+        let currentVoiceResponse = ''; // Current response being streamed
 
         // Image Processing variables
         let selectedImages = [];
@@ -3315,31 +3339,28 @@
                 if (activeTab === 'qa') {
                     appendToResponse(data.model, data.chunk);
                 } else if (activeTab === 'voice') {
-                    // Handle voice streaming with text accumulation for better formatting
+                    // Handle voice streaming with smooth text flow
                     const responseContent = document.getElementById('voiceResponseContent');
                     if (responseContent) {
                         // Accumulate the raw text
                         voiceStreamingText += data.chunk;
                         
-                        let currentContent = responseContent.innerHTML;
-                        if (currentContent.includes('AI is thinking')) {
-                            // First chunk - replace the thinking message
-                            responseContent.innerHTML = `<div class="response-text">${voiceStreamingText}</div>`;
-                            console.log('✅ Voice: Created new response-text div with first chunk');
-                        } else {
-                            // Subsequent chunks - update with accumulated text
-                            const responseText = responseContent.querySelector('.response-text');
-                            if (responseText) {
-                                // Display the accumulated text as-is for real-time streaming effect
-                                responseText.innerHTML = voiceStreamingText;
-                                console.log('✅ Voice: Updated response with accumulated text');
-                            } else {
-                                // Fallback: create response text div if it doesn't exist
-                                responseContent.innerHTML = `<div class="response-text">${voiceStreamingText}</div>`;
-                                console.log('✅ Voice: Created fallback response-text div');
-                            }
+                        let responseText = responseContent.querySelector('.response-text');
+                        if (!responseText) {
+                            // First chunk - create the response container and replace loading message
+                            responseContent.innerHTML = `<div class="response-text streaming"></div>`;
+                            responseText = responseContent.querySelector('.response-text');
+                            console.log('✅ Voice: Created new response-text div for streaming');
                         }
-                        // Auto-scroll to bottom
+                        
+                        if (responseText) {
+                            // During streaming, use textContent for natural text flow
+                            responseText.textContent = voiceStreamingText;
+                            responseText.classList.add('streaming');
+                            console.log('✅ Voice: Appended chunk, total length:', voiceStreamingText.length);
+                        }
+                        
+                        // Auto-scroll to bottom for long responses
                         responseContent.scrollTop = responseContent.scrollHeight;
                     } else {
                         console.error('❌ Voice: voiceResponseContent not found for chunk!');
@@ -3399,9 +3420,20 @@
                     if (responseContent && voiceStreamingText) {
                         const responseText = responseContent.querySelector('.response-text');
                         if (responseText) {
-                            const formattedText = formatResponseText(voiceStreamingText);
-                            responseText.innerHTML = formattedText;
-                            console.log('✅ Voice: Applied final formatting to completed response');
+                            // Remove streaming class and apply formatting
+                            responseText.classList.remove('streaming');
+                            
+                            // Only apply formatting if text contains markdown-like elements
+                            if (voiceStreamingText.includes('**') || voiceStreamingText.includes('*') || 
+                                voiceStreamingText.includes('```') || voiceStreamingText.includes('#') ||
+                                voiceStreamingText.includes('- ') || /^\d+\.\s/.test(voiceStreamingText)) {
+                                const formattedText = formatResponseText(voiceStreamingText);
+                                responseText.innerHTML = formattedText;
+                                console.log('✅ Voice: Applied markdown formatting to completed response');
+                            } else {
+                                // Keep as plain text if no formatting needed - preserves natural flow
+                                console.log('✅ Voice: Keeping response as plain text (no formatting needed)');
+                            }
                         }
                     }
                     
@@ -5164,20 +5196,34 @@
                 return;
             }
             
+            // Add user question to conversation history
+            voiceConversationHistory.push({
+                type: 'question',
+                content: text,
+                timestamp: new Date().toLocaleTimeString(),
+                model: selectedModel
+            });
+            
             // Start voice processing mode
             startVoiceProcessing('voice-to-text');
             
-            // Show response section
+            // Show response section and update conversation display
             const responseSection = document.getElementById('voiceResponseSection');
             const responseMeta = document.getElementById('voiceResponseMeta');
             const responseContent = document.getElementById('voiceResponseContent');
             
             responseSection.style.display = 'block';
             responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModel}...`;
-            responseContent.innerHTML = '<div class="loading">🤖 AI is thinking...</div>';
             
-            // Reset voice streaming text for this new query
-            voiceStreamingText = '';
+            // Update conversation display with question + response placeholder
+            updateVoiceConversationDisplay();
+            
+            // Reset current response accumulator for this new query
+            currentVoiceResponse = '';
+            
+            // Clear the input field for next question
+            textInput.value = '';
+            updateUnifiedTextStats();
             
             // Send to backend using the existing query_models event
             const queryData = {
