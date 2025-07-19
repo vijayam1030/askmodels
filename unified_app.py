@@ -10,6 +10,7 @@ import requests
 import random
 import calendar
 from datetime import datetime, timedelta
+from typing import List, Dict, Any
 from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
@@ -35,6 +36,81 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 config_manager = ConfigManager()
 model_manager = OllamaModelManager(config_manager)
 available_models = []
+
+# Conversation history storage
+conversation_histories = {}  # {session_id: {model_name: [conversation_history]}}
+
+class ConversationManager:
+    """Manages conversation history for Ask AI functionality."""
+    
+    def __init__(self):
+        self.conversations = {}
+    
+    def get_conversation_history(self, session_id: str, model_name: str) -> List[Dict]:
+        """Get conversation history for a specific session and model."""
+        if session_id not in self.conversations:
+            self.conversations[session_id] = {}
+        
+        if model_name not in self.conversations[session_id]:
+            self.conversations[session_id][model_name] = []
+        
+        return self.conversations[session_id][model_name]
+    
+    def add_message(self, session_id: str, model_name: str, role: str, content: str):
+        """Add a message to the conversation history."""
+        history = self.get_conversation_history(session_id, model_name)
+        history.append({
+            'role': role,
+            'content': content,
+            'timestamp': time.time()
+        })
+        
+        # Keep only last 20 messages to prevent memory issues
+        if len(history) > 20:
+            self.conversations[session_id][model_name] = history[-20:]
+    
+    def clear_conversation(self, session_id: str, model_name: str = None):
+        """Clear conversation history for a model or all models in a session."""
+        if session_id not in self.conversations:
+            return
+        
+        if model_name:
+            if model_name in self.conversations[session_id]:
+                self.conversations[session_id][model_name] = []
+        else:
+            # Clear all conversations for this session
+            self.conversations[session_id] = {}
+    
+    def get_formatted_prompt(self, session_id: str, model_name: str, new_question: str) -> str:
+        """Generate a formatted prompt with conversation history."""
+        history = self.get_conversation_history(session_id, model_name)
+        
+        if not history:
+            return new_question
+        
+        # Build conversation context
+        context_parts = []
+        for message in history[-10:]:  # Use last 10 messages for context
+            role = message['role']
+            content = message['content']
+            if role == 'user':
+                context_parts.append(f"User: {content}")
+            elif role == 'assistant':
+                context_parts.append(f"Assistant: {content}")
+        
+        # Add new question
+        context_parts.append(f"User: {new_question}")
+        
+        # Create the full prompt
+        full_prompt = "You are a helpful AI assistant. Please respond to the user's question based on the conversation history.\n\n"
+        full_prompt += "Conversation history:\n"
+        full_prompt += "\n".join(context_parts)
+        full_prompt += "\n\nAssistant:"
+        
+        return full_prompt
+
+# Initialize conversation manager
+conversation_manager = ConversationManager()
 
 # Debate configuration
 DEBATE_ROUNDS = 3
@@ -1682,7 +1758,7 @@ def handle_cancel_query(data):
 
 @socketio.on('ask_llm')
 def handle_ask_llm(data):
-    """Handle single LLM query from dashboard."""
+    """Handle single LLM query from dashboard with conversation history."""
     question = data.get('question', '').strip()
     model = data.get('model', '').strip()
     session_id = request.sid
@@ -1701,6 +1777,9 @@ def handle_ask_llm(data):
         emit('llm_error', {'message': f'Model {model} is not available'})
         return
     
+    # Add user message to conversation history
+    conversation_manager.add_message(session_id, model, 'user', question)
+    
     # Emit started event
     emit('llm_started', {'model': model})
     
@@ -1712,8 +1791,38 @@ def handle_ask_llm(data):
     thread.daemon = True
     thread.start()
 
+@socketio.on('clear_conversation')
+def handle_clear_conversation(data):
+    """Handle clearing conversation history."""
+    session_id = request.sid
+    model = data.get('model', '').strip()
+    
+    if model:
+        conversation_manager.clear_conversation(session_id, model)
+        emit('conversation_cleared', {'model': model, 'session_id': session_id})
+    else:
+        conversation_manager.clear_conversation(session_id)
+        emit('conversation_cleared', {'model': 'all', 'session_id': session_id})
+
+@socketio.on('get_conversation_history')
+def handle_get_conversation_history(data):
+    """Handle request for conversation history."""
+    session_id = request.sid
+    model = data.get('model', '').strip()
+    
+    if not model:
+        emit('llm_error', {'message': 'Please specify a model'})
+        return
+    
+    history = conversation_manager.get_conversation_history(session_id, model)
+    emit('conversation_history', {
+        'model': model,
+        'history': history,
+        'session_id': session_id
+    })
+
 def process_llm_query_async(question: str, model: str, session_id: str):
-    """Process single LLM query asynchronously."""
+    """Process single LLM query asynchronously with conversation history."""
     try:
         # Run in new event loop for thread
         loop = asyncio.new_event_loop()
@@ -1721,10 +1830,13 @@ def process_llm_query_async(question: str, model: str, session_id: str):
         
         start_time = time.time()
         
+        # Get conversation history and create contextual prompt
+        formatted_prompt = conversation_manager.get_formatted_prompt(session_id, model, question)
+        
         # Query the model with a reasonable timeout for Ask AI
         model_response = loop.run_until_complete(
             asyncio.wait_for(
-                model_manager.query_model(model, question),
+                model_manager.query_model(model, formatted_prompt),
                 timeout=120.0  # 120 second timeout for Ask AI to handle slower models
             )
         )
@@ -1739,12 +1851,16 @@ def process_llm_query_async(question: str, model: str, session_id: str):
                 'session_id': session_id
             })
         else:
+            # Add assistant response to conversation history
+            conversation_manager.add_message(session_id, model, 'assistant', model_response.response)
+            
             # Emit response with the actual response text
             socketio.emit('llm_response', {
                 'model': model,
                 'response': model_response.response,
                 'response_time': response_time,
-                'session_id': session_id
+                'session_id': session_id,
+                'conversation_length': len(conversation_manager.get_conversation_history(session_id, model))
             })
         
         loop.close()

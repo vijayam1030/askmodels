@@ -381,6 +381,139 @@
         }
 
         .response-meta {
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Conversation History Styles */
+        .conversation-controls {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .clear-btn, .history-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover, .history-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .conversation-history {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .conversation-history.show {
+            display: block;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .history-header h4 {
+            margin: 0;
+            font-size: 14px;
+            color: white;
+        }
+
+        .history-count {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .history-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .no-history {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .message-user {
+            align-self: flex-end;
+            max-width: 80%;
+        }
+
+        .message-assistant {
+            align-self: flex-start;
+            max-width: 80%;
+        }
+
+        .message-content {
+            padding: 10px 14px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .message-user .message-content {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .message-assistant .message-content {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .message-timestamp {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 8px;
+        }
+
+        .message-user .message-timestamp {
+            text-align: right;
+        }
+
+        .message-assistant .message-timestamp {
+            text-align: left;
+        }
+
+        .widget-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        }
+
+        .response-meta {
             font-size: 0.8em;
             opacity: 0.8;
             margin-bottom: 10px;
@@ -823,7 +956,13 @@
 
         <!-- LLM Chat Widget -->
         <div class="widget llm-widget">
-            <div class="widget-title">🤖 Ask AI Assistant</div>
+            <div class="widget-title">
+                🤖 Ask AI Assistant
+                <div class="conversation-controls">
+                    <button class="clear-btn" id="clearConversationBtn" onclick="clearConversation()" title="Clear conversation history">🗑️</button>
+                    <button class="history-btn" id="toggleHistoryBtn" onclick="toggleConversationHistory()" title="Toggle conversation history">📜</button>
+                </div>
+            </div>
             <div class="llm-form">
                 <select class="model-select" id="modelSelect" title="Select AI Model">
                     <option value="">Select AI Model...</option>
@@ -831,6 +970,18 @@
                 <textarea class="question-input" id="questionInput" placeholder="Ask any question..."></textarea>
                 <button class="ask-btn" id="askBtn" onclick="askLLM()">Ask AI</button>
             </div>
+            
+            <!-- Conversation History -->
+            <div class="conversation-history" id="conversationHistory">
+                <div class="history-header">
+                    <h4>💬 Conversation History</h4>
+                    <span class="history-count" id="historyCount">0 messages</span>
+                </div>
+                <div class="history-messages" id="historyMessages">
+                    <div class="no-history">No conversation history yet. Start by asking a question!</div>
+                </div>
+            </div>
+            
             <div class="llm-response llm-response-hidden" id="llmResponse">
                 <div class="response-meta" id="responseMeta"></div>
                 <div id="responseText"></div>
@@ -1209,6 +1360,9 @@
                 return;
             }
             
+            // Add user message to conversation history display
+            addMessageToHistory('user', question, model);
+            
             // Show loading state immediately
             const responseDiv = document.getElementById('llmResponse');
             const metaDiv = document.getElementById('responseMeta');
@@ -1245,11 +1399,16 @@
             const metaDiv = document.getElementById('responseMeta');
             const textDiv = document.getElementById('responseText');
             
-            metaDiv.innerHTML = `<span class="status-indicator status-online"></span>${data.model} (${data.response_time.toFixed(2)}s)`;
+            // Update conversation count display
+            const conversationLength = data.conversation_length || 0;
+            metaDiv.innerHTML = `<span class="status-indicator status-online"></span>${data.model} (${data.response_time.toFixed(2)}s) - ${conversationLength} messages`;
             
             // Format the response properly
             const formattedResponse = formatLLMResponse(data.response);
             textDiv.innerHTML = formattedResponse;
+            
+            // Add to conversation history display
+            addMessageToHistory('assistant', data.response, data.model);
             
             document.getElementById('askBtn').disabled = false;
             document.getElementById('askBtn').textContent = 'Ask AI';
@@ -1339,11 +1498,171 @@
             document.getElementById('askBtn').textContent = 'Ask AI';
         }
 
+        // Conversation History Functions
+        function addMessageToHistory(role, content, model) {
+            const historyMessages = document.getElementById('historyMessages');
+            const noHistoryMsg = historyMessages.querySelector('.no-history');
+            
+            // Remove "no history" message if it exists
+            if (noHistoryMsg) {
+                noHistoryMsg.remove();
+            }
+            
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${role}`;
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (role === 'user') {
+                messageContent.textContent = content;
+            } else {
+                // Format assistant response
+                messageContent.innerHTML = formatLLMResponse(content);
+            }
+            
+            const messageTimestamp = document.createElement('div');
+            messageTimestamp.className = 'message-timestamp';
+            messageTimestamp.textContent = new Date().toLocaleTimeString();
+            
+            messageDiv.appendChild(messageContent);
+            messageDiv.appendChild(messageTimestamp);
+            
+            historyMessages.appendChild(messageDiv);
+            
+            // Update message count
+            updateHistoryCount();
+            
+            // Auto-scroll to bottom
+            historyMessages.scrollTop = historyMessages.scrollHeight;
+        }
+
+        function updateHistoryCount() {
+            const historyMessages = document.getElementById('historyMessages');
+            const messages = historyMessages.querySelectorAll('.message');
+            const count = messages.length;
+            
+            document.getElementById('historyCount').textContent = `${count} message${count !== 1 ? 's' : ''}`;
+        }
+
+        function clearConversation() {
+            const model = document.getElementById('modelSelect').value;
+            
+            if (!model) {
+                alert('Please select a model first');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear the conversation history?')) {
+                // Clear visual history
+                const historyMessages = document.getElementById('historyMessages');
+                historyMessages.innerHTML = '<div class="no-history">No conversation history yet. Start by asking a question!</div>';
+                
+                // Update count
+                updateHistoryCount();
+                
+                // Clear server-side history
+                socket.emit('clear_conversation', {
+                    model: model
+                });
+            }
+        }
+
+        function toggleConversationHistory() {
+            const historyDiv = document.getElementById('conversationHistory');
+            const toggleBtn = document.getElementById('toggleHistoryBtn');
+            
+            if (historyDiv.classList.contains('show')) {
+                historyDiv.classList.remove('show');
+                toggleBtn.textContent = '📜';
+                toggleBtn.title = 'Show conversation history';
+            } else {
+                historyDiv.classList.add('show');
+                toggleBtn.textContent = '📜';
+                toggleBtn.title = 'Hide conversation history';
+            }
+        }
+
+        // Add socket event listeners for conversation history
+        socket.on('conversation_cleared', function(data) {
+            console.log('Conversation cleared:', data);
+        });
+
+        socket.on('conversation_history', function(data) {
+            console.log('Conversation history received:', data);
+            
+            // Clear current history display
+            const historyMessages = document.getElementById('historyMessages');
+            historyMessages.innerHTML = '';
+            
+            if (data.history && data.history.length > 0) {
+                // Populate with history messages
+                data.history.forEach(message => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message message-${message.role}`;
+                    
+                    const messageContent = document.createElement('div');
+                    messageContent.className = 'message-content';
+                    
+                    if (message.role === 'user') {
+                        messageContent.textContent = message.content;
+                    } else {
+                        messageContent.innerHTML = formatLLMResponse(message.content);
+                    }
+                    
+                    const messageTimestamp = document.createElement('div');
+                    messageTimestamp.className = 'message-timestamp';
+                    messageTimestamp.textContent = new Date(message.timestamp * 1000).toLocaleTimeString();
+                    
+                    messageDiv.appendChild(messageContent);
+                    messageDiv.appendChild(messageTimestamp);
+                    
+                    historyMessages.appendChild(messageDiv);
+                });
+                
+                // Auto-scroll to bottom
+                historyMessages.scrollTop = historyMessages.scrollHeight;
+            } else {
+                // No history
+                historyMessages.innerHTML = '<div class="no-history">No conversation history yet. Start by asking a question!</div>';
+            }
+            
+            // Update count
+            updateHistoryCount();
+        });
+
         // Enter key support for question input
         document.getElementById('questionInput').addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && e.ctrlKey) {
                 askLLM();
             }
+        });
+
+        // Model selection change handler
+        document.getElementById('modelSelect').addEventListener('change', function(e) {
+            const selectedModel = e.target.value;
+            if (selectedModel) {
+                // Load conversation history for the selected model
+                socket.emit('get_conversation_history', {
+                    model: selectedModel
+                });
+            } else {
+                // Clear history display when no model selected
+                const historyMessages = document.getElementById('historyMessages');
+                historyMessages.innerHTML = '<div class="no-history">No conversation history yet. Start by asking a question!</div>';
+                updateHistoryCount();
+            }
+        });
+
+        // Initialize conversation history display
+        function initializeConversationHistory() {
+            updateHistoryCount();
+        }
+
+        // Call initialization when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeConversationHistory();
         });
     </script>
 </body>
