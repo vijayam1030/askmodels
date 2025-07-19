@@ -2747,6 +2747,282 @@
         .explanation-section.show {
             display: block !important;
         }
+
+        /* Voice Model Selection Styles */
+        .voice-model-selection {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .voice-model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .voice-model-header h3 {
+            color: #495057;
+            margin: 0;
+            font-size: 1.1em;
+        }
+
+        .voice-model-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .model-action-btn {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #495057;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s ease;
+        }
+
+        .model-action-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .voice-model-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+            min-height: 100px;
+        }
+
+        .voice-model-container .loading-models {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .voice-model-category {
+            grid-column: 1 / -1;
+            margin: 20px 0 10px 0;
+        }
+
+        .voice-category-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #495057;
+            padding: 8px 0;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-models-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .voice-specialty-group {
+            background: white;
+            border-radius: 6px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .voice-specialty-header {
+            background: #495057;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .voice-model-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 6px 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            margin-bottom: 4px;
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+        }
+
+        .voice-model-card:hover {
+            border-color: #adb5bd;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .voice-model-card.selected {
+            border-color: #28a745;
+            background: #f8fff9;
+            box-shadow: 0 1px 4px rgba(40, 167, 69, 0.2);
+        }
+
+        .voice-model-card.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .voice-model-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .voice-model-info h4 {
+            margin: 0 0 1px 0;
+            color: #495057;
+            font-size: 0.8em;
+            line-height: 1.1;
+            font-weight: 600;
+        }
+
+        .voice-model-details {
+            font-size: 0.7em;
+            color: #6c757d;
+            line-height: 1.1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .voice-model-size {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-size: 0.65em;
+        }
+
+        .voice-model-checkbox {
+            margin-right: 6px;
+            transform: scale(0.8);
+        }
+
+        .voice-model-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-top: 1px solid #e9ecef;
+            margin-top: 10px;
+        }
+
+        .selected-count {
+            font-size: 0.9em;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .selected-models-display {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .selected-models-display h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-models-list {
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #6c757d;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .selected-model-item {
+            background: #f8f9fa;
+            padding: 6px 10px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 3px solid #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-name-text {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .model-specialty-text {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .voice-model-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .voice-model-actions {
+                justify-content: center;
+            }
+
+            .voice-model-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .voice-models-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .voice-models-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
@@ -2996,11 +3272,27 @@
                     </div>
                     
                     <div class="voice-controls">
-                        <div class="model-selection-voice">
-                            <label for="voiceModelSelect">Select AI Model for Response:</label>
-                            <select id="voiceModelSelect" class="model-select-voice">
-                                <option value="">Choose a model...</option>
-                            </select>
+                        <div class="voice-model-selection">
+                            <div class="voice-model-header">
+                                <h3>🤖 Select AI Models for Voice Response</h3>
+                                <div class="voice-model-actions">
+                                    <button id="selectAllVoiceModels" class="model-action-btn">✅ Select All</button>
+                                    <button id="clearAllVoiceModels" class="model-action-btn">❌ Clear All</button>
+                                    <button id="selectBySpecialtyVoice" class="model-action-btn">🎯 By Specialty</button>
+                                </div>
+                            </div>
+                            <div id="voiceModelContainer" class="voice-model-container">
+                                <div class="loading-models">Loading models...</div>
+                            </div>
+                            <div class="voice-model-status" id="voiceModelStatus">
+                                <span class="selected-count">0 models selected</span>
+                            </div>
+                            <div class="selected-models-display" id="selectedModelsDisplay" style="display: none;">
+                                <h4>📋 Selected Models:</h4>
+                                <div class="selected-models-list" id="selectedModelsList">
+                                    No models selected
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -3407,11 +3699,16 @@
                         window.currentVoiceQuestion = null; // Clear temporary storage
                     }
                     
-                    // Update voice response status
-                    const responseMeta = document.getElementById('voiceResponseMeta');
-                    if (responseMeta) {
-                        responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing with ${data.model}...`;
+                    // Initialize response tracking for multiple models
+                    if (!window.voiceModelResponses) {
+                        window.voiceModelResponses = {};
                     }
+                    
+                    // Create or update response card for this model
+                    createOrUpdateVoiceResponseCard(data.model, 'processing', '');
+                    
+                    // Update overall status
+                    updateVoiceOverallStatus();
                     
                     // Update conversation display to show the question and loading state
                     updateVoiceConversationDisplay();
@@ -3453,25 +3750,40 @@
                 if (activeTab === 'qa') {
                     appendToResponse(data.model, data.chunk);
                 } else if (activeTab === 'voice') {
-                    // Handle voice streaming with conversation history
-                    currentVoiceResponse += data.chunk;
-                    
-                    // Update the conversation display with the current streaming response
-                    const currentResponseContent = document.getElementById('currentResponseContent');
-                    if (currentResponseContent) {
-                        currentResponseContent.textContent = currentVoiceResponse;
-                        currentResponseContent.classList.add('streaming');
-                        console.log('✅ Voice: Updated streaming response, total length:', currentVoiceResponse.length);
-                    } else {
-                        // If no current response element, update full display
-                        updateVoiceConversationDisplay();
+                    // Handle voice streaming with multiple models
+                    if (!window.voiceModelResponses) {
+                        window.voiceModelResponses = {};
                     }
                     
-                    // Auto-scroll to bottom
+                    // Initialize this model's response if not exists
+                    if (!window.voiceModelResponses[data.model]) {
+                        window.voiceModelResponses[data.model] = {
+                            status: 'processing',
+                            content: '',
+                            timestamp: new Date().toLocaleTimeString()
+                        };
+                    }
+                    
+                    // Append chunk to this model's content
+                    window.voiceModelResponses[data.model].content += data.chunk;
+                    
+                    // Update the specific model's content display
+                    const modelContentElement = document.getElementById(`voice-content-${data.model}`);
+                    if (modelContentElement) {
+                        modelContentElement.innerHTML = `<div class="streaming">${escapeHtml(window.voiceModelResponses[data.model].content)}</div>`;
+                        modelContentElement.scrollTop = modelContentElement.scrollHeight;
+                    } else {
+                        // If element doesn't exist, update the full display
+                        updateVoiceResponseDisplay();
+                    }
+                    
+                    // Auto-scroll main container to bottom
                     const responseContent = document.getElementById('voiceResponseContent');
                     if (responseContent) {
                         responseContent.scrollTop = responseContent.scrollHeight;
                     }
+                    
+                    console.log('✅ Voice: Updated streaming response for', data.model, 'total length:', window.voiceModelResponses[data.model].content.length);
                 } else if (activeTab === 'image') {
                     console.log('🔍 Handling image tab chunk_received');
                     // Handle image streaming
@@ -3515,41 +3827,51 @@
                 if (activeTab === 'qa') {
                     updateResponseStatus(data.model, 'completed', data.elapsed_time);
                 } else if (activeTab === 'voice') {
-                    // Update voice completion status and finalize conversation entry
-                    const responseMeta = document.getElementById('voiceResponseMeta');
-                    
-                    if (responseMeta) {
-                        responseMeta.innerHTML = `<span class="status-indicator status-success"></span>Response from ${data.model} (${data.elapsed_time || 'N/A'})`;
-                    }
-                    
-                    // Add completed response to conversation history
-                    if (currentVoiceResponse) {
-                        const lastQuestion = voiceConversationHistory[voiceConversationHistory.length - 1];
+                    // Update voice completion status for this specific model
+                    if (window.voiceModelResponses && window.voiceModelResponses[data.model]) {
+                        window.voiceModelResponses[data.model].status = 'completed';
+                        window.voiceModelResponses[data.model].responseTime = data.elapsed_time;
                         
-                        // Apply formatting if needed
-                        let finalContent = currentVoiceResponse;
-                        if (currentVoiceResponse.includes('**') || currentVoiceResponse.includes('*') || 
-                            currentVoiceResponse.includes('```') || currentVoiceResponse.includes('#') ||
-                            currentVoiceResponse.includes('- ') || /^\d+\.\s/.test(currentVoiceResponse)) {
-                            finalContent = formatResponseText(currentVoiceResponse);
+                        // Update the response display
+                        updateVoiceResponseDisplay();
+                        updateVoiceOverallStatus();
+                        
+                        // Check if all models are completed
+                        const allCompleted = Object.values(window.voiceModelResponses).every(r => r.status === 'completed');
+                        if (allCompleted) {
+                            // Add all responses to conversation history
+                            Object.keys(window.voiceModelResponses).forEach(modelName => {
+                                const response = window.voiceModelResponses[modelName];
+                                
+                                // Apply formatting if needed
+                                let finalContent = response.content;
+                                if (response.content.includes('**') || response.content.includes('*') || 
+                                    response.content.includes('```') || response.content.includes('#') ||
+                                    response.content.includes('- ') || /^\d+\.\s/.test(response.content)) {
+                                    finalContent = formatResponseText(response.content);
+                                }
+                                
+                                voiceConversationHistory.push({
+                                    type: 'response',
+                                    content: finalContent,
+                                    timestamp: new Date().toLocaleTimeString(),
+                                    model: modelName,
+                                    responseTime: response.responseTime
+                                });
+                            });
+                            
+                            // Clear the temporary responses
+                            window.voiceModelResponses = {};
+                            
+                            // Update the full conversation display
+                            updateVoiceConversationDisplay();
+                            
+                            // Re-enable submit button after all completions
+                            handleVoiceQueryComplete();
+                            
+                            console.log('✅ Voice: All model responses completed and added to conversation history');
                         }
-                        
-                        voiceConversationHistory.push({
-                            type: 'response',
-                            content: finalContent,
-                            timestamp: new Date().toLocaleTimeString(),
-                            model: data.model,
-                            responseTime: data.elapsed_time
-                        });
-                        
-                        console.log('✅ Voice: Added completed response to conversation history');
                     }
-                    
-                    // Update the full conversation display
-                    updateVoiceConversationDisplay();
-                    
-                    // Re-enable submit button after completion
-                    handleVoiceQueryComplete();
                 } else if (activeTab === 'image') {
                     // Update image completion status
                     const explanationMeta = document.getElementById('explanationMeta');
@@ -4155,7 +4477,7 @@
         }
         
         function loadModels() {
-            fetch('/api/models')
+            return fetch('/api/models')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -4168,23 +4490,57 @@
                         modelsList.textContent = statusText;
                         modelsInfo.classList.add('show');
                         
-                        // Store models with info globally for Q&A enhanced cards FIRST
+                        // Store models globally for all tabs to use
+                        window.allModels = data.models;
+                        window.codingModels = data.coding_models || [];
+                        
+                        // Store models with info globally for enhanced cards
                         if (data.models_with_info) {
                             window.modelsWithInfo = data.models_with_info;
                             console.log('DEBUG: Loaded models_with_info:', data.models_with_info.length, 'models');
                             
-                            // Now populate both grids with enhanced model cards
+                            // Populate Q&A grids with enhanced model cards
                             populateModelGrid(data.models, data.coding_models);
                             populateDebateModelGrid(data.models_with_info);
+                            
+                            // Update voice model grid if we're on voice tab or if it needs updating
+                            if (activeTab === 'voice' || document.getElementById('voiceModelContainer')) {
+                                populateVoiceModelGrid();
+                            }
+                            
+                            // Populate image model select
+                            populateImageModelSelect();
                         } else {
                             console.log('DEBUG: No models_with_info found in API response');
-                            // Fallback to simple Q&A grid only
+                            // Create basic model info for other tabs
+                            window.modelsWithInfo = data.models.map(model => ({
+                                name: model,
+                                specialty: 'General Purpose',
+                                category: 'General'
+                            }));
+                            
+                            // Fallback to simple grids
                             populateModelGrid(data.models, data.coding_models);
+                            
+                            if (activeTab === 'voice' || document.getElementById('voiceModelContainer')) {
+                                populateVoiceModelGrid();
+                            }
+                            populateImageModelSelect();
                         }
+                        
+                        return data; // Return data for promise chaining
+                    } else {
+                        throw new Error(data.error || 'Failed to load models');
                     }
                 })
                 .catch(error => {
                     console.error('Error loading models:', error);
+                    // Update voice container with error if it's visible
+                    const voiceContainer = document.getElementById('voiceModelContainer');
+                    if (voiceContainer) {
+                        voiceContainer.innerHTML = '<div class="models-error">❌ Failed to load models</div>';
+                    }
+                    throw error; // Re-throw for promise chaining
                 });
         }
 
@@ -4626,6 +4982,254 @@
             }
         }
 
+        function getCategoryIcon(category) {
+            const iconMap = {
+                'Code Generation': '💻',
+                'Creative Writing': '✍️',
+                'Scientific Analysis': '🔬',
+                'Conversational AI': '💬',
+                'Mathematical Reasoning': '🧮',
+                'Creative Thinking': '🎨',
+                'Text Analysis': '📝',
+                'General Purpose': '🤖',
+                'Problem Solving': '🧩',
+                'Language Translation': '🌐',
+                'Data Analysis': '📊',
+                'Research Assistant': '📚',
+                'General': '🤖'
+            };
+            return iconMap[category] || '🤖';
+        }
+
+        // Voice model selection functions
+        function selectAllVoiceModels() {
+            document.querySelectorAll('.voice-model-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+                updateVoiceModelCardStyle(checkbox.parentElement, true);
+            });
+            updateVoiceModelSelection();
+        }
+
+        function clearAllVoiceModels() {
+            document.querySelectorAll('.voice-model-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+                updateVoiceModelCardStyle(checkbox.parentElement, false);
+            });
+            updateVoiceModelSelection();
+        }
+
+        function selectBySpecialtyVoice() {
+            // Show a dropdown menu for selecting by specialty
+            const specialties = ['Code Assistant', 'Creative Writing', 'General Purpose', 'Problem Solving', 'Language Translation', 'Data Analysis', 'Research Assistant'];
+            const selectedSpecialty = prompt('Select specialty:\n' + specialties.map((s, i) => `${i+1}. ${s}`).join('\n'));
+            
+            if (selectedSpecialty) {
+                const index = parseInt(selectedSpecialty) - 1;
+                if (index >= 0 && index < specialties.length) {
+                    selectCategoryVoice(specialties[index]);
+                }
+            }
+        }
+
+        function selectCategoryVoice(category) {
+            document.querySelectorAll(`.voice-model-card[data-category="${category}"] .voice-model-checkbox`).forEach(checkbox => {
+                checkbox.checked = true;
+                updateVoiceModelCardStyle(checkbox.parentElement, true);
+            });
+            updateVoiceModelSelection();
+        }
+
+        function clearCategoryVoice(category) {
+            document.querySelectorAll(`.voice-model-card[data-category="${category}"] .voice-model-checkbox`).forEach(checkbox => {
+                checkbox.checked = false;
+                updateVoiceModelCardStyle(checkbox.parentElement, false);
+            });
+            updateVoiceModelSelection();
+        }
+
+        function selectDiverseVoiceModels() {
+            // Clear all first
+            clearAllVoiceModels();
+            
+            // Auto-select diverse models from different categories
+            const categoryGroups = {};
+            document.querySelectorAll('.voice-model-card').forEach(card => {
+                const category = card.dataset.category;
+                if (!categoryGroups[category]) {
+                    categoryGroups[category] = [];
+                }
+                categoryGroups[category].push(card);
+            });
+            
+            // Select one from each category up to 3
+            let selected = 0;
+            Object.keys(categoryGroups).forEach(category => {
+                if (selected < 3 && categoryGroups[category].length > 0) {
+                    const checkbox = categoryGroups[category][0].querySelector('.voice-model-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        updateVoiceModelCardStyle(checkbox.parentElement, true);
+                        selected++;
+                    }
+                }
+            });
+            
+            updateVoiceModelSelection();
+        }
+
+        function updateVoiceModelSelection() {
+            const selectedCheckboxes = document.querySelectorAll('.voice-model-checkbox:checked');
+            const selected = selectedCheckboxes.length;
+            
+            // Update count display
+            const statusElement = document.getElementById('voiceModelStatus');
+            if (statusElement) {
+                const countSpan = statusElement.querySelector('.selected-count');
+                if (countSpan) {
+                    countSpan.textContent = `${selected} model${selected !== 1 ? 's' : ''} selected`;
+                }
+            }
+            
+            // Update selected models text display
+            const selectedModelsDisplay = document.getElementById('selectedModelsDisplay');
+            const selectedModelsList = document.getElementById('selectedModelsList');
+            
+            if (selectedModelsDisplay && selectedModelsList) {
+                if (selected > 0) {
+                    selectedModelsDisplay.style.display = 'block';
+                    let modelsText = '';
+                    
+                    // Group selected models by specialty for display
+                    const selectedBySpecialty = {};
+                    selectedCheckboxes.forEach(checkbox => {
+                        const specialty = checkbox.dataset.specialty || 'General';
+                        const modelName = checkbox.value;
+                        
+                        if (!selectedBySpecialty[specialty]) {
+                            selectedBySpecialty[specialty] = [];
+                        }
+                        selectedBySpecialty[specialty].push(modelName);
+                    });
+                    
+                    // Create grouped text display
+                    Object.keys(selectedBySpecialty).sort().forEach(specialty => {
+                        const specialtyIcon = getSpecialtyIcon(specialty);
+                        modelsText += `<div class="selected-model-item">
+                            <span class="model-specialty-text">${specialtyIcon} ${specialty}:</span>
+                            <span class="model-name-text">${selectedBySpecialty[specialty].join(', ')}</span>
+                        </div>`;
+                    });
+                    
+                    selectedModelsList.innerHTML = modelsText;
+                } else {
+                    selectedModelsDisplay.style.display = 'none';
+                }
+            }
+            
+            // Update model card styles
+            document.querySelectorAll('.voice-model-card').forEach(card => {
+                const checkbox = card.querySelector('.voice-model-checkbox');
+                if (checkbox) {
+                    updateVoiceModelCardStyle(card, checkbox.checked);
+                }
+            });
+            
+            // Update submit button state
+            updateUnifiedSubmitButtonState();
+        }
+
+        function updateVoiceModelCardStyle(card, isSelected) {
+            if (isSelected) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
+
+        // Voice response management for multiple models
+        function createOrUpdateVoiceResponseCard(modelName, status, content = '') {
+            if (!window.voiceModelResponses) {
+                window.voiceModelResponses = {};
+            }
+            
+            // Initialize or update response data for this model
+            window.voiceModelResponses[modelName] = {
+                status: status,
+                content: content,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            
+            // Update the voice response display
+            updateVoiceResponseDisplay();
+        }
+
+        function updateVoiceResponseDisplay() {
+            const responseContent = document.getElementById('voiceResponseContent');
+            if (!responseContent || !window.voiceModelResponses) return;
+            
+            let responsesHtml = '';
+            
+            // Show each model's response
+            Object.keys(window.voiceModelResponses).forEach(modelName => {
+                const response = window.voiceModelResponses[modelName];
+                const statusClass = response.status === 'completed' ? 'completed' : 
+                                  response.status === 'processing' ? 'processing' : 
+                                  response.status === 'error' ? 'error' : '';
+                
+                responsesHtml += `
+                    <div class="voice-model-response ${statusClass}">
+                        <div class="voice-model-header">
+                            <span class="voice-model-name">🤖 ${modelName}</span>
+                            <span class="voice-model-status">${getStatusText(response.status)}</span>
+                            <span class="voice-model-time">${response.timestamp}</span>
+                        </div>
+                        <div class="voice-model-content" id="voice-content-${modelName}">
+                            ${response.content || '<div class="loading">Thinking...</div>'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            responseContent.innerHTML = responsesHtml;
+            
+            // Auto-scroll to bottom
+            responseContent.scrollTop = responseContent.scrollHeight;
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'processing': return '🔄 Processing...';
+                case 'completed': return '✅ Completed';
+                case 'error': return '❌ Error';
+                default: return '⏳ Waiting...';
+            }
+        }
+
+        function updateVoiceOverallStatus() {
+            const responseMeta = document.getElementById('voiceResponseMeta');
+            if (!responseMeta || !window.voiceModelResponses) return;
+            
+            const models = Object.keys(window.voiceModelResponses);
+            const completed = models.filter(m => window.voiceModelResponses[m].status === 'completed').length;
+            const processing = models.filter(m => window.voiceModelResponses[m].status === 'processing').length;
+            
+            if (processing > 0) {
+                responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Processing ${processing} of ${models.length} models...`;
+            } else if (completed === models.length) {
+                responseMeta.innerHTML = `<span class="status-indicator status-success"></span>All ${models.length} models completed`;
+            } else {
+                responseMeta.innerHTML = `<span class="status-indicator status-partial"></span>${completed} of ${models.length} models completed`;
+            }
+        }
+
+        function getSelectedVoiceModels() {
+            const checkedBoxes = document.querySelectorAll('.voice-model-checkbox:checked');
+            const selectedModels = Array.from(checkedBoxes).map(checkbox => checkbox.value);
+            console.log('🔍 Voice model checkboxes found:', checkedBoxes.length);
+            console.log('🔍 Selected voice models:', selectedModels);
+            return selectedModels;
+        }
+
         // Helper function to get specialty icons
         function getSpecialtyIcon(specialty) {
             const iconMap = {
@@ -4962,20 +5566,88 @@
         }
 
         function populateVoiceModelSelect() {
-            const voiceModelSelect = document.getElementById('voiceModelSelect');
-            if (!voiceModelSelect) return;
+            const voiceModelContainer = document.getElementById('voiceModelContainer');
+            if (!voiceModelContainer) return;
             
-            voiceModelSelect.innerHTML = '<option value="">Choose a model...</option>';
+            // Show loading state
+            voiceModelContainer.innerHTML = '<div class="models-loading">🔄 Loading models...</div>';
             
-            // Use the same models from the main Q&A functionality
-            if (window.modelsWithInfo && window.modelsWithInfo.length > 0) {
-                window.modelsWithInfo.forEach(modelInfo => {
-                    const option = document.createElement('option');
-                    option.value = modelInfo.name;
-                    option.textContent = `${modelInfo.name} - ${modelInfo.specialty}`;
-                    voiceModelSelect.appendChild(option);
+            // Load models if not already loaded
+            if (!window.modelsWithInfo || window.modelsWithInfo.length === 0) {
+                console.log('Loading models for voice tab...');
+                loadModels().then(() => {
+                    populateVoiceModelGrid();
                 });
+            } else {
+                populateVoiceModelGrid();
             }
+        }
+
+        function populateVoiceModelGrid() {
+            const voiceModelContainer = document.getElementById('voiceModelContainer');
+            if (!voiceModelContainer) return;
+            
+            // Clear loading message
+            voiceModelContainer.innerHTML = '';
+            
+            if (!window.modelsWithInfo || window.modelsWithInfo.length === 0) {
+                voiceModelContainer.innerHTML = '<div class="no-models">❌ No models available</div>';
+                return;
+            }
+            
+            // Group models by specialty (not category)
+            const specialtyGroups = {};
+            window.modelsWithInfo.forEach(modelInfo => {
+                const specialty = modelInfo.specialty || 'General';
+                if (!specialtyGroups[specialty]) {
+                    specialtyGroups[specialty] = [];
+                }
+                specialtyGroups[specialty].push(modelInfo);
+            });
+            
+            // Create three-column layout with specialties
+            let gridHtml = '<div class="voice-models-grid">';
+            
+            const specialties = Object.keys(specialtyGroups).sort();
+            specialties.forEach(specialty => {
+                const specialtyIcon = getSpecialtyIcon(specialty);
+                
+                gridHtml += `
+                    <div class="voice-specialty-group">
+                        <div class="voice-specialty-header">
+                            ${specialtyIcon} ${specialty}
+                            <span style="font-size: 0.8em; opacity: 0.8;">(${specialtyGroups[specialty].length})</span>
+                        </div>
+                `;
+                
+                // Add models for this specialty
+                specialtyGroups[specialty].forEach(modelInfo => {
+                    gridHtml += `
+                        <div class="voice-model-card" data-specialty="${specialty}" data-category="${modelInfo.category}">
+                            <input type="checkbox" 
+                                   class="voice-model-checkbox" 
+                                   id="voice-model-${modelInfo.name}" 
+                                   value="${modelInfo.name}" 
+                                   data-specialty="${specialty}"
+                                   onchange="updateVoiceModelSelection()">
+                            <div class="voice-model-info">
+                                <h4>${modelInfo.name}</h4>
+                                <div class="voice-model-details">
+                                    <span class="voice-model-size">${modelInfo.size || 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                gridHtml += '</div>';
+            });
+            
+            gridHtml += '</div>';
+            voiceModelContainer.innerHTML = gridHtml;
+            
+            // Auto-select one model from first 3 specialties initially
+            selectDiverseVoiceModels();
         }
 
         function initializeSpeechRecognition() {
@@ -5074,9 +5746,24 @@
             document.getElementById('stopVoiceProcessingBtn').addEventListener('click', stopVoiceProcessing);
             document.getElementById('clearUnifiedInput').addEventListener('click', clearUnifiedInput);
             
+            // Voice model action button event listeners
+            document.getElementById('selectAllVoiceModels').addEventListener('click', selectAllVoiceModels);
+            document.getElementById('clearAllVoiceModels').addEventListener('click', clearAllVoiceModels);
+            document.getElementById('selectBySpecialtyVoice').addEventListener('click', selectBySpecialtyVoice);
+            
             // Real-time text stats and submit button state
-            document.getElementById('unifiedTextInput').addEventListener('input', updateUnifiedTextStats);
-            document.getElementById('voiceModelSelect').addEventListener('change', updateUnifiedSubmitButtonState);
+            document.getElementById('unifiedTextInput').addEventListener('input', function(e) {
+                // Check if user is manually changing the preserved question
+                if (window.questionPreserved && window.lastSubmittedQuestion) {
+                    const currentText = e.target.value;
+                    if (currentText !== window.lastSubmittedQuestion) {
+                        // User has manually changed the text, no longer preserve it
+                        window.questionPreserved = false;
+                        window.lastSubmittedQuestion = null;
+                    }
+                }
+                updateUnifiedTextStats();
+            });
             
             // Track cursor position changes
             document.getElementById('unifiedTextInput').addEventListener('click', function(e) {
@@ -5299,26 +5986,31 @@
 
         function updateUnifiedSubmitButtonState() {
             const textInput = document.getElementById('unifiedTextInput');
-            const modelSelect = document.getElementById('voiceModelSelect');
             const submitBtn = document.getElementById('submitUnifiedInput');
             
             const hasText = textInput.value.trim().length > 0;
-            const hasModel = modelSelect.value !== '';
+            const selectedModels = getSelectedVoiceModels();
+            const hasModels = selectedModels.length > 0;
             
-            submitBtn.disabled = !hasText || !hasModel;
+            submitBtn.disabled = !hasText || !hasModels;
             
             if (!hasText) {
                 submitBtn.title = 'Please enter some text first';
-            } else if (!hasModel) {
-                submitBtn.title = 'Please select an AI model';
+            } else if (!hasModels) {
+                submitBtn.title = 'Please select at least one AI model';
             } else {
-                submitBtn.title = 'Submit for AI analysis';
+                submitBtn.title = `Submit for analysis by ${selectedModels.length} model${selectedModels.length !== 1 ? 's' : ''}`;
             }
         }
 
         function clearUnifiedInput() {
             document.getElementById('unifiedTextInput').value = '';
             currentCursorPosition = 0; // Reset cursor position tracking
+            
+            // Reset question preservation flags
+            window.questionPreserved = false;
+            window.lastSubmittedQuestion = null;
+            
             updateUnifiedTextStats();
             updateUnifiedSubmitButtonState();
             
@@ -5339,12 +6031,14 @@
 
         function submitUnifiedInput() {
             const textInput = document.getElementById('unifiedTextInput');
-            const modelSelect = document.getElementById('voiceModelSelect');
             const text = textInput.value.trim();
-            const selectedModel = modelSelect.value;
+            const selectedModels = getSelectedVoiceModels();
             
-            if (!text || !selectedModel) {
-                updateVoiceStatusMini('❌ Please enter text and select a model');
+            console.log('📝 Submitting text:', text);
+            console.log('🎯 Selected models for submission:', selectedModels);
+            
+            if (!text || selectedModels.length === 0) {
+                updateVoiceStatusMini('❌ Please enter text and select models');
                 return;
             }
             
@@ -5353,7 +6047,7 @@
                 type: 'question',
                 content: text,
                 timestamp: new Date().toLocaleTimeString(),
-                model: selectedModel
+                models: selectedModels // Store all selected models
             };
             
             // Start voice processing mode
@@ -5364,14 +6058,17 @@
             const responseMeta = document.getElementById('voiceResponseMeta');
             
             responseSection.style.display = 'block';
-            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModel}...`;
+            responseMeta.innerHTML = `<span class="status-indicator status-loading"></span>Sending to ${selectedModels.length} model${selectedModels.length !== 1 ? 's' : ''}...`;
             
             // Reset current response accumulator for this new query
             currentVoiceResponse = '';
             
-            // Clear the input field for next question
-            textInput.value = '';
-            currentCursorPosition = 0; // Reset cursor position for next input
+            // Store the last submitted question to preserve it
+            window.lastSubmittedQuestion = text;
+            window.questionPreserved = true;
+            
+            // Don't clear the input field - preserve it for reuse
+            currentCursorPosition = text.length; // Set cursor to end
             updateUnifiedTextStats();
             
             // Send to backend using the existing query_models event
@@ -5379,11 +6076,11 @@
                 session_id: sessionId,
                 question: text,
                 question_type: 'general',
-                models: [selectedModel],
+                selected_models: selectedModels, // Send all selected models
                 streaming: true
             };
             
-            console.log('🚀 Submitting unified input:', queryData);
+            console.log('🚀 Submitting unified input to multiple models:', queryData);
             socket.emit('query_models', queryData);
         }
 
@@ -5392,6 +6089,13 @@
             const responseContent = document.getElementById('voiceResponseContent');
             if (!responseContent) return;
             
+            // If we have active model responses, show them instead of history
+            if (window.voiceModelResponses && Object.keys(window.voiceModelResponses).length > 0) {
+                updateVoiceResponseDisplay();
+                return;
+            }
+            
+            // Otherwise show conversation history
             let conversationHtml = '';
             
             voiceConversationHistory.forEach((entry, index) => {
@@ -5413,6 +6117,7 @@
                                 <span class="entry-icon">🤖</span>
                                 <span class="entry-label">${entry.model}</span>
                                 <span class="entry-time">${entry.timestamp}</span>
+                                ${entry.responseTime ? `<span class="response-time">(${entry.responseTime})</span>` : ''}
                             </div>
                             <div class="entry-content">${entry.content}</div>
                         </div>
@@ -5420,34 +6125,9 @@
                 }
             });
             
-            // Add current streaming response if in progress
-            if (isVoiceProcessing && currentVoiceResponse) {
-                const lastQuestion = voiceConversationHistory[voiceConversationHistory.length - 1];
-                conversationHtml += `
-                    <div class="conversation-entry response-entry streaming">
-                        <div class="entry-header">
-                            <span class="entry-icon">🤖</span>
-                            <span class="entry-label">${lastQuestion ? lastQuestion.model : 'AI'}</span>
-                            <span class="entry-time">Responding...</span>
-                        </div>
-                        <div class="entry-content streaming" id="currentResponseContent">${escapeHtml(currentVoiceResponse)}</div>
-                    </div>
-                `;
-            } else if (isVoiceProcessing) {
-                // Show loading for new question
-                const lastQuestion = voiceConversationHistory[voiceConversationHistory.length - 1];
-                conversationHtml += `
-                    <div class="conversation-entry response-entry loading">
-                        <div class="entry-header">
-                            <span class="entry-icon">🤖</span>
-                            <span class="entry-label">${lastQuestion ? lastQuestion.model : 'AI'}</span>
-                            <span class="entry-time">Thinking...</span>
-                        </div>
-                        <div class="entry-content loading" id="currentResponseContent">
-                            <div class="ai-thinking">🤖 AI is thinking...</div>
-                        </div>
-                    </div>
-                `;
+            // Show placeholder if no conversation
+            if (conversationHtml === '') {
+                conversationHtml = '<div class="conversation-placeholder">Start a conversation by typing a question above and submitting it for AI analysis.</div>';
             }
             
             responseContent.innerHTML = conversationHtml;
@@ -5461,6 +6141,7 @@
             voiceConversationHistory = [];
             currentVoiceResponse = '';
             window.currentVoiceQuestion = null; // Clear temporary question storage
+            window.voiceModelResponses = {}; // Clear model responses tracking
             
             const responseContent = document.getElementById('voiceResponseContent');
             if (responseContent) {
