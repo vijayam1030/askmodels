@@ -3661,11 +3661,13 @@
                         <div class="voice-response-meta" id="voiceResponseMeta"></div>
                         <div class="voice-response-content" id="voiceResponseContent">
                             <div class="conversation-placeholder">Start a conversation by typing a question above and submitting it for AI analysis.</div>
+                            <!-- AI-generated summaries will be appended here -->
+                            <div id="summaryContent"></div>
                         </div>
                     </div>
                     
                     <!-- AI Summary Section -->
-                    <div class="ai-summary-section hide" id="aiSummarySection">
+                    <!-- <div class="ai-summary-section hide" id="aiSummarySection">
                         <div class="summary-header">
                             <h3>📝 AI-Generated Summary</h3>
                             <div class="summary-actions">
@@ -3681,7 +3683,7 @@
                         <div class="summary-content" id="summaryContent">
                             <div class="summary-placeholder">Summary will appear here...</div>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
 
@@ -4823,15 +4825,29 @@ if (typeof window !== 'undefined' && typeof regenerateSummaryWithModel === 'func
     window.regenerateSummaryWithModel = regenerateSummaryWithModel;
 }
 
-// Remove any test/debug popups globally
-window.regenerateSummaryWithModel = function(modelName) {
-    // If the real function exists, call it
-    if (typeof window._realRegenerateSummaryWithModel === 'function') {
-        window._realRegenerateSummaryWithModel(modelName);
+// Real implementation: Regenerate summary with selected model
+window._realRegenerateSummaryWithModel = function(modelName) {
+    if (!modelName) {
+        showNotification('Please select a model to regenerate the summary.', 'warning');
         return;
     }
-    // Otherwise, do nothing (no alert, no popup)
-    // (If you want to add your real implementation, assign it to window._realRegenerateSummaryWithModel)
+    // Emit socket event to backend to regenerate summary
+    if (typeof socket !== 'undefined' && sessionId) {
+        socket.emit('regenerate_summary', {
+            session_id: sessionId,
+            model: modelName,
+            tab: activeTab
+        });
+        showNotification('Regenerating summary with model: ' + modelName, 'info');
+    } else {
+        showNotification('Socket not connected. Please try again.', 'error');
+    }
+};
+// Ensure the global handler calls the real implementation
+window.regenerateSummaryWithModel = function(modelName) {
+    if (typeof window._realRegenerateSummaryWithModel === 'function') {
+        window._realRegenerateSummaryWithModel(modelName);
+    }
 };
                 } else {
                     console.error('❌ summaryContent element not found!');
@@ -4843,10 +4859,8 @@ window.regenerateSummaryWithModel = function(modelName) {
         socket.on('summary_response', (data) => {
             if (data.session_id === sessionId && activeTab === 'voice') {
                 console.log('📝 Summary response received (non-streaming):', data);
-                
                 // Clear the streaming content variable
                 window.currentSummaryContent = '';
-                
                 // Display the completed summary
                 displaySummary({
                     model: data.model_used || data.model,
@@ -4854,6 +4868,25 @@ window.regenerateSummaryWithModel = function(modelName) {
                     response_time: data.elapsed_time || data.response_time,
                     models_analyzed: data.models_analyzed || data.response_count || 0
                 });
+                // Also update the inline summary box in the voice tab
+                const voiceResponseContent = document.getElementById('voiceResponseContent');
+                if (voiceResponseContent && (data.summary || data.response)) {
+                    // Always append a new summary box below the previous ones
+                    let summaryDiv = document.createElement('div');
+                    summaryDiv.className = 'inlineSummaryBox';
+                    summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
+                    const summaryId = 'inlineSummaryText_' + Date.now();
+                    const titleId = 'summaryBoxTitle_' + Date.now();
+                    summaryDiv.innerHTML = `<b id="${titleId}"></b> <span id="${summaryId}"></span>`;
+                    voiceResponseContent.appendChild(summaryDiv);
+                    const inlineSummaryText = document.getElementById(summaryId);
+                    const summaryBoxTitle = document.getElementById(titleId);
+                    if (inlineSummaryText && summaryBoxTitle) {
+                        const summaryModel = (data.model_used || data.model || '');
+                        summaryBoxTitle.textContent = summaryModel ? `Summary (by ${summaryModel}):` : 'Summary:';
+                        inlineSummaryText.textContent = data.summary || data.response;
+                    }
+                }
             }
         });
 
@@ -4874,19 +4907,18 @@ window.regenerateSummaryWithModel = function(modelName) {
                 // Always preserve the streaming content if it exists and has substance
                 if (currentStreamingContent && currentStreamingContent.trim().length > 10) {
                     console.log('📝 Using streaming content (length:', currentStreamingContent.length, ')');
-                    
                     // Just remove the streaming class and cursor, keep the content
-                    const streamingDiv = summaryContent.querySelector('.summary-text.streaming');
-                    if (streamingDiv) {
-                        // Remove streaming cursor
-                        const cursor = streamingDiv.querySelector('.streaming-cursor');
-                        if (cursor) cursor.remove();
-                        
-                        // Remove streaming class and add completed class
-                        streamingDiv.classList.remove('streaming');
-                        streamingDiv.classList.add('completed');
-                        
-                        console.log('✅ Converted streaming content to completed');
+                    if (summaryContent) {
+                        const streamingDiv = summaryContent.querySelector('.summary-text.streaming');
+                        if (streamingDiv) {
+                            // Remove streaming cursor
+                            const cursor = streamingDiv.querySelector('.streaming-cursor');
+                            if (cursor) cursor.remove();
+                            // Remove streaming class and add completed class
+                            streamingDiv.classList.remove('streaming');
+                            streamingDiv.classList.add('completed');
+                            console.log('✅ Converted streaming content to completed');
+                        }
                     }
                     
                     // Update meta information
@@ -4903,10 +4935,8 @@ window.regenerateSummaryWithModel = function(modelName) {
                     }
                 } else {
                     console.log('📝 No valid streaming content, using final summary');
-                    
                     // Clear the streaming content variable
                     window.currentSummaryContent = '';
-                    
                     // Display the completed summary using displaySummary function
                     const summaryData = {
                         model: data.model_used || data.model,
@@ -4914,9 +4944,27 @@ window.regenerateSummaryWithModel = function(modelName) {
                         response_time: data.elapsed_time,
                         models_analyzed: data.models_analyzed || data.response_count || 0
                     };
-                    
                     console.log('🔍 Calling displaySummary with:', summaryData);
                     displaySummary(summaryData);
+                    // Also update the inline summary box in the voice tab
+                    const voiceResponseContent = document.getElementById('voiceResponseContent');
+                    if (voiceResponseContent && finalSummary.length > 0) {
+                        // Always append a new summary box below the previous ones
+                        let summaryDiv = document.createElement('div');
+                        summaryDiv.className = 'inlineSummaryBox';
+                        summaryDiv.style.cssText = 'background: #f5f5f5; color: #222; border: 2px solid #4CAF50; padding: 12px; margin: 16px 0; font-size: 15px; border-radius: 6px;';
+                        const summaryId = 'inlineSummaryText_' + Date.now();
+                        const titleId = 'summaryBoxTitle_' + Date.now();
+                        summaryDiv.innerHTML = `<b id="${titleId}"></b> <span id="${summaryId}"></span>`;
+                        voiceResponseContent.appendChild(summaryDiv);
+                        const inlineSummaryText = document.getElementById(summaryId);
+                        const summaryBoxTitle = document.getElementById(titleId);
+                        if (inlineSummaryText && summaryBoxTitle) {
+                            const summaryModel = (data.model_used || data.model || '');
+                            summaryBoxTitle.textContent = summaryModel ? `Summary (by ${summaryModel}):` : 'Summary:';
+                            inlineSummaryText.textContent = finalSummary;
+                        }
+                    }
                 }
                 
                 // Verify final content
@@ -6468,7 +6516,6 @@ window.regenerateSummaryWithModel = function(modelName) {
             // Create a simple test function that we can call manually
             window.testSummary = function() {
                 console.log('📝 🚀 TEST SUMMARY FUNCTION CALLED!');
-                alert('🧪 TEST SUMMARY FUNCTION CALLED! Check console now.');
                 generateVoiceSummary();
             };
             
@@ -7069,8 +7116,7 @@ window.regenerateSummaryWithModel = function(modelName) {
             console.log('📝 Conversation history type:', typeof voiceConversationHistory);
             console.log('📝 Conversation history length:', voiceConversationHistory ? voiceConversationHistory.length : 'undefined');
             
-            // Show an immediate alert to confirm the function is called
-            alert('🧪 Test Summary function called! Check console for details.');
+            // (Test summary function called - no popup)
             
             // For testing purposes, create a fake conversation if none exists
             if (!voiceConversationHistory || voiceConversationHistory.length === 0) {
